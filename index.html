@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fredags-AW · Churchill Arms</title>
+<meta name="description" content="AW fredag 16 oktober från 16.30 på Churchill Arms, Tulegatan 21. Säg till om du kommer.">
+<meta property="og:title" content="Fredags-AW · Churchill Arms">
+<meta property="og:description" content="Fredag 16 oktober från 16.30, Tulegatan 21. Säg till om du kommer!">
+<meta property="og:image" content="aw-poster.jpg">
+<meta name="theme-color" content="#1f4d3a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #e4ebe6;
+    --surface: #fbfcfa;
+    --surface-2: #eef3ef;
+    --ink: #15231c;
+    --muted: #55665d;
+    --line: #cdd8d0;
+    --green: #1f4d3a;
+    --green-ink: #ffffff;
+    --brass: #a8731a;
+    --brass-soft: #f4e6c9;
+    --band-accent: #e0a93f;
+    --no: #6b5a55;
+    --error-bg: #fbe7e4;
+    --error-ink: #8a2015;
+    --ok-bg: #e2efe6;
+    --ok-ink: #1f4d3a;
+    --shadow: 0 1px 2px rgba(20, 40, 30, .08), 0 6px 20px rgba(20, 40, 30, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1612;
+      --surface: #17221c;
+      --surface-2: #1e2c25;
+      --ink: #e7eee9;
+      --muted: #a2b4aa;
+      --line: #2d3f35;
+      --green: #2a6a50;
+      --green-ink: #ffffff;
+      --brass: #e0a93f;
+      --brass-soft: #3a2f17;
+      --no: #85736d;
+      --error-bg: #3b1d19;
+      --error-ink: #ffb4a8;
+      --ok-bg: #1b3428;
+      --ok-ink: #b9e3c9;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 20px rgba(0, 0, 0, .3);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 17px/1.5 "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, button, .big { font-family: Oswald, "Arial Narrow", Impact, sans-serif; }
+
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-bottom: 48px;
+  }
+  .poster {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    background: #1b2a22;
+  }
+
+  .band {
+    background: var(--green);
+    color: var(--green-ink);
+    padding: 22px 16px 24px;
+    border-top: 4px solid var(--band-accent);
+  }
+  .band .eyebrow {
+    margin: 0 0 6px;
+    font: 600 14px/1.3 Oswald, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--band-accent);
+  }
+  .band h1 {
+    margin: 0 0 8px;
+    font-size: clamp(26px, 7vw, 34px);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: .01em;
+  }
+  .band p { margin: 0; color: rgba(255, 255, 255, .88); }
+
+  .wrap { padding: 0 16px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 20px 16px;
+    margin-top: 20px;
+  }
+
+  .notice {
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--brass-soft);
+    border: 1px solid var(--brass);
+    font-size: 15px;
+  }
+  .notice code { font-size: 14px; }
+
+  label[for="name"] {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  #name {
+    display: block;
+    width: 100%;
+    font: inherit;
+    font-size: 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  #name:focus-visible {
+    outline: 3px solid var(--brass);
+    outline-offset: 2px;
+    border-color: var(--brass);
+  }
+  #name[aria-invalid="true"] { border-color: var(--error-ink); }
+  .hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+  }
+  @media (max-width: 340px) { .choices { grid-template-columns: 1fr; } }
+  .choice {
+    position: relative;
+    min-height: 68px;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform .08s ease, background-color .15s ease, border-color .15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice:hover { border-color: var(--brass); }
+  .choice:active { transform: scale(.97); }
+  .choice:focus-visible {
+    outline: 3px solid var(--brass);
+    outline-offset: 3px;
+  }
+  .choice[disabled] { cursor: progress; opacity: .7; }
+  .choice[aria-pressed="true"] { color: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
+  .choice[aria-pressed="true"]::after {
+    content: "✓";
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--brass);
+    color: #fff;
+    font: 700 15px/26px "Source Sans 3", sans-serif;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .choice[data-status="yes"][aria-pressed="true"]   { background: var(--green); border-color: var(--green); }
+  .choice[data-status="maybe"][aria-pressed="true"] { background: var(--brass); border-color: var(--brass); }
+  .choice[data-status="no"][aria-pressed="true"]    { background: var(--no);    border-color: var(--no); }
+  @media (prefers-color-scheme: dark) {
+    .choice[data-status="maybe"][aria-pressed="true"] { color: #1a1408; }
+  }
+
+  .msg {
+    margin: 16px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .msg:empty { display: none; }
+  .msg.ok    { background: var(--ok-bg);    color: var(--ok-ink); }
+  .msg.error { background: var(--error-bg); color: var(--error-ink); }
+  .msg.info  { background: var(--surface-2); color: var(--muted); }
+
+  .linkish {
+    margin-top: 14px;
+    padding: 4px 2px;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font: 400 15px/1.4 "Source Sans 3", sans-serif;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .linkish:hover { color: var(--ink); }
+  .linkish:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
+
+  .tally { text-align: center; padding-top: 24px; }
+  .big {
+    display: block;
+    font-size: 84px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--green);
+  }
+  @media (prefers-color-scheme: dark) { .big { color: var(--brass); } }
+  .big-label {
+    display: block;
+    margin-top: 2px;
+    font: 600 16px/1.2 Oswald, sans-serif;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .group { margin-top: 22px; }
+  .group h2 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 6px;
+  }
+  .pills {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    max-width: 100%;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    overflow-wrap: anywhere;
+  }
+  .group[data-status="yes"] .pill { background: var(--ok-bg); border-color: transparent; }
+  .group[data-status="no"] .pill  { color: var(--muted); }
+  .group .pill.me {
+    font-weight: 700;
+    border: 2px solid var(--brass);
+    background: var(--brass-soft);
+    color: var(--ink);
+  }
+  .pill .you {
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+  .empty { margin: 0; color: var(--muted); font-style: italic; }
+  .updated { margin: 20px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+  .updated.error { color: var(--error-ink); font-weight: 600; }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <img class="poster" src="aw-poster.jpg" width="1024" height="1536"
+       alt="Affisch: Fredags-AW på Churchill Arms – en öl, goda historier och tveksamma beslut">
+
+  <header class="band">
+    <p class="eyebrow">AW · Fredag 16 oktober · Från 16.30</p>
+    <h1>Churchill Arms, Tulegatan 21</h1>
+    <p>Stockholm. Säg till om du kommer, så vet vi hur många vi är.</p>
+  </header>
+
+  <div class="wrap">
+    <div id="config-notice" class="notice" hidden>
+      Sidan är inte kopplad till någon databas än. Fyll i <code>SUPABASE_URL</code> och
+      <code>SUPABASE_ANON_KEY</code> överst i skriptet i <code>index.html</code>.
+    </div>
+
+    <section class="card" aria-labelledby="rsvp-heading">
+      <h2 id="rsvp-heading" class="visually-hidden">Din anmälan</h2>
+      <form id="rsvp-form" novalidate>
+        <label for="name">Ditt namn</label>
+        <input id="name" name="name" type="text" maxlength="40" autocomplete="name"
+               autocapitalize="words" enterkeyhint="done" aria-describedby="name-hint" required>
+        <p id="name-hint" class="hint">Max 40 tecken. Välj sedan ett svar nedan.</p>
+
+        <div class="choices" role="group" aria-label="Kommer du?">
+          <button type="button" class="choice" data-status="yes"   aria-pressed="false">Jag kommer</button>
+          <button type="button" class="choice" data-status="maybe" aria-pressed="false">Kanske</button>
+          <button type="button" class="choice" data-status="no"    aria-pressed="false">Kan inte</button>
+        </div>
+      </form>
+
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      <button id="remove" type="button" class="linkish" hidden>Ta bort min anmälan</button>
+    </section>
+
+    <section class="card tally" aria-labelledby="list-heading">
+      <h2 id="list-heading" class="visually-hidden">Vilka kommer</h2>
+      <span class="big" id="count-yes">–</span>
+      <span class="big-label">kommer</span>
+
+      <div style="text-align:left">
+        <div class="group" data-status="yes">
+          <h2>Kommer (<span data-count>0</span>)</h2>
+          <ul class="pills"></ul>
+        </div>
+        <div class="group" data-status="maybe">
+          <h2>Kanske (<span data-count>0</span>)</h2>
+          <ul class="pills"></ul>
+        </div>
+        <div class="group" data-status="no">
+          <h2>Kan inte (<span data-count>0</span>)</h2>
+          <ul class="pills"></ul>
+        </div>
+      </div>
+
+      <p id="updated" class="updated" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+
+<script>
+  // ==== FYLL I DESSA (Supabase: Project Settings → API / Data API) ====
+  const SUPABASE_URL = "https://DITT-PROJEKT.supabase.co";
+  const SUPABASE_ANON_KEY = "DIN-ANON-NYCKEL";
+  // ====================================================================
+
+  const STORAGE_KEY = "fredagsaw-2026-10-16";
+  const REFRESH_MS = 10000;
+  const MAX_NAME = 40;
+
+  const LABELS = { yes: "Jag kommer", maybe: "Kanske", no: "Kan inte" };
+  const CONFIRM = {
+    yes: "Toppen! Du står på listan. Vi ses på Churchill Arms 🍺",
+    maybe: "Noterat som kanske. Hoppas du kan!",
+    no: "Tråkigt! Du är noterad som ”kan inte”. Nästa gång kanske."
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const nameInput = $("#name");
+  const msg = $("#msg");
+  const removeBtn = $("#remove");
+  const choiceBtns = Array.from(document.querySelectorAll(".choice"));
+
+  const configured = !SUPABASE_URL.includes("DITT-PROJEKT") && !SUPABASE_ANON_KEY.includes("DIN-");
+  const API = SUPABASE_URL.replace(/\/+$/, "") + "/rest/v1/rsvp";
+
+  // ---- Lokal state (token + egen anmälan) ----
+  let memoryStore = null;
+  function loadMe() {
+    let me = null;
+    try { me = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (e) { me = memoryStore; }
+    if (!me || typeof me.token !== "string" || me.token.length < 20) {
+      me = { token: randomToken(), id: null, name: "", status: null };
+      saveMe(me);
+    }
+    return me;
+  }
+  function saveMe(me) {
+    memoryStore = me;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(me)); } catch (e) { /* privat läge e.d. */ }
+  }
+  function randomToken() {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  let me = loadMe();
+  let saving = false;
+  let listSeq = 0;
+
+  // ---- API ----
+  class ApiError extends Error {}
+
+  async function api(query, { method = "GET", body, withToken = false, prefer } = {}) {
+    if (!configured) throw new ApiError("Sidan är inte kopplad till databasen än (Supabase-uppgifter saknas).");
+    const headers = { apikey: SUPABASE_ANON_KEY, Accept: "application/json" };
+    // Äldre anon-nycklar är JWT:er och ska även skickas som Bearer. Nya "publishable" nycklar räcker i apikey.
+    if (SUPABASE_ANON_KEY.startsWith("eyJ")) headers.Authorization = "Bearer " + SUPABASE_ANON_KEY;
+    if (body) headers["Content-Type"] = "application/json";
+    if (withToken) headers["x-rsvp-token"] = me.token;
+    if (prefer) headers.Prefer = prefer;
+
+    let res;
+    try {
+      res = await fetch(API + query, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+    } catch (e) {
+      throw new ApiError("Ingen kontakt med servern. Kolla din uppkoppling och försök igen.");
+    }
+    if (!res.ok) {
+      let detail = {};
+      try { detail = await res.json(); } catch (e) {}
+      throw new ApiError(friendlyError(res.status, detail));
+    }
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  function friendlyError(status, d) {
+    if (d.code === "23514") return "Kunde inte spara: namnet måste vara 1–40 tecken.";
+    if (d.code === "42501" || status === 401 || status === 403)
+      return "Kunde inte spara: åtkomst nekad. Kontrollera nyckeln och att SQL:en för behörigheter är körd.";
+    if (d.code === "42P01" || d.code === "PGRST205" || status === 404)
+      return "Kunde inte spara: tabellen rsvp hittades inte. Har SQL:en körts i Supabase?";
+    if (status === 429) return "För många försök på kort tid. Vänta en stund och försök igen.";
+    if (status >= 500) return "Servern svarar inte just nu (fel " + status + "). Försök igen om en liten stund.";
+    return "Kunde inte spara (fel " + status + (d.message ? ": " + d.message : "") + ").";
+  }
+
+  // ---- UI-hjälp ----
+  function showMsg(text, kind) {
+    msg.className = "msg " + (kind || "info");
+    msg.textContent = text;
+  }
+  function setBusy(busy) {
+    saving = busy;
+    choiceBtns.forEach((b) => { b.disabled = busy; });
+    removeBtn.disabled = busy;
+  }
+  function renderSelection() {
+    const current = me.id ? me.status : null;
+    choiceBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.status === current)));
+    removeBtn.hidden = !me.id;
+  }
+
+  // ---- Spara / ändra ----
+  async function choose(status) {
+    if (saving) return;
+    const name = nameInput.value.trim().replace(/\s+/g, " ");
+    if (!name) {
+      nameInput.setAttribute("aria-invalid", "true");
+      showMsg("Skriv ditt namn först.", "error");
+      nameInput.focus();
+      return;
+    }
+    if (name.length > MAX_NAME) {
+      nameInput.setAttribute("aria-invalid", "true");
+      showMsg("Namnet får vara max " + MAX_NAME + " tecken.", "error");
+      nameInput.focus();
+      return;
+    }
+    nameInput.removeAttribute("aria-invalid");
+    nameInput.value = name;
+
+    setBusy(true);
+    showMsg("Sparar …", "info");
+    try {
+      let id = null;
+      if (me.id) {
+        const rows = await api("?id=eq." + encodeURIComponent(me.id) + "&select=id", {
+          method: "PATCH", body: { name, status }, withToken: true, prefer: "return=representation"
+        });
+        if (Array.isArray(rows) && rows.length) id = rows[0].id;
+      }
+      if (!id) {
+        // Ingen tidigare anmälan (eller den är borttagen) – skapa en ny.
+        const rows = await api("?select=id", {
+          method: "POST", body: { name, status, token: me.token }, prefer: "return=representation"
+        });
+        id = rows && rows[0] && rows[0].id;
+        if (!id) throw new ApiError("Kunde inte spara: oväntat svar från servern.");
+      }
+      me = { ...me, id, name, status };
+      saveMe(me);
+      renderSelection();
+      showMsg(CONFIRM[status], "ok");
+    } catch (e) {
+      showMsg(e instanceof ApiError ? e.message : "Något gick fel. Försök igen.", "error");
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  }
+
+  async function removeMine() {
+    if (saving || !me.id) return;
+    if (!confirm("Vill du ta bort din anmälan?")) return;
+    setBusy(true);
+    showMsg("Tar bort …", "info");
+    try {
+      await api("?id=eq." + encodeURIComponent(me.id), { method: "DELETE", withToken: true, prefer: "return=minimal" });
+      me = { ...me, id: null, status: null };
+      saveMe(me);
+      renderSelection();
+      showMsg("Din anmälan är borttagen.", "ok");
+    } catch (e) {
+      showMsg(e instanceof ApiError ? e.message.replace("Kunde inte spara", "Kunde inte ta bort") : "Något gick fel. Försök igen.", "error");
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  }
+
+  // ---- Lista ----
+  async function refresh() {
+    if (!configured) return;
+    const seq = ++listSeq;
+    const updated = $("#updated");
+    try {
+      const rows = await api("?select=id,name,status,created_at&order=created_at.asc");
+      if (seq !== listSeq) return; // ett nyare anrop har redan startat
+      if (me.id && !saving && !rows.some((r) => r.id === me.id)) {
+        // Vår anmälan finns inte längre (t.ex. borttagen i en annan flik).
+        me = { ...me, id: null, status: null };
+        saveMe(me);
+        renderSelection();
+      }
+      renderList(rows);
+      updated.classList.remove("error");
+      updated.textContent = "Uppdateras automatiskt · senast " +
+        new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (e) {
+      if (seq !== listSeq) return;
+      updated.classList.add("error");
+      updated.textContent = e instanceof ApiError
+        ? e.message.replace("Kunde inte spara", "Kunde inte hämta listan")
+        : "Kunde inte hämta listan.";
+    }
+  }
+
+  function renderList(rows) {
+    const groups = { yes: [], maybe: [], no: [] };
+    rows.forEach((r) => { if (groups[r.status]) groups[r.status].push(r); });
+
+    $("#count-yes").textContent = String(groups.yes.length);
+
+    document.querySelectorAll(".group").forEach((g) => {
+      const status = g.dataset.status;
+      const list = groups[status];
+      g.querySelector("[data-count]").textContent = String(list.length);
+      const ul = g.querySelector(".pills");
+      ul.replaceChildren();
+      if (!list.length) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = status === "yes" ? "Ingen än – bli först!" : "Ingen.";
+        ul.appendChild(li);
+        return;
+      }
+      list.forEach((r) => {
+        const li = document.createElement("li");
+        li.className = "pill";
+        li.textContent = r.name;
+        if (r.id === me.id) {
+          li.classList.add("me");
+          const you = document.createElement("span");
+          you.className = "you";
+          you.textContent = "du";
+          li.appendChild(you);
+        }
+        ul.appendChild(li);
+      });
+    });
+  }
+
+  // ---- Start ----
+  choiceBtns.forEach((b) => b.addEventListener("click", () => choose(b.dataset.status)));
+  removeBtn.addEventListener("click", removeMine);
+  $("#rsvp-form").addEventListener("submit", (e) => e.preventDefault());
+  nameInput.addEventListener("input", () => nameInput.removeAttribute("aria-invalid"));
+
+  nameInput.value = me.name || "";
+  renderSelection();
+
+  if (!configured) {
+    $("#config-notice").hidden = false;
+    $("#count-yes").textContent = "0";
+    renderList([]);
+  } else {
+    refresh();
+    setInterval(() => { if (!document.hidden && !saving) refresh(); }, REFRESH_MS);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  }
+</script>
+</body>
+</html>
