@@ -1,6 +1,6 @@
 # Fredags-AW – anmälningssida
 
-Enkel anmälningssida för AW på Churchill Arms, Tulegatan 21 (fredag 16 oktober, från 16.30).
+Enkel anmälningssida för AW på Sue Ellen (fredag 16 oktober, från 17.00).
 Statisk sida (`index.html` + `aw-poster.jpg`) på GitHub Pages med Supabase som databas.
 Ingen inloggning, inget byggsteg.
 
