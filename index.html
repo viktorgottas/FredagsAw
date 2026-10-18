@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fredags-AW · Sue Ellen</title>
-<meta name="description" content="AW fredag 16 oktober från 17.00 på Sue Ellen. Säg till om du kommer.">
-<meta property="og:title" content="Fredags-AW · Sue Ellen">
-<meta property="og:description" content="Fredag 16 oktober från 17.00 på Sue Ellen. Säg till om du kommer!">
+<title>AW – var och när?</title>
+<meta name="description" content="Föreslå var och när nästa AW blir, och säg till vilka förslag som funkar för dig.">
+<meta property="og:title" content="AW – var och när?">
+<meta property="og:description" content="Föreslå ett ställe och en tid, eller säg till vilka förslag som funkar för dig.">
 <meta property="og:image" content="aw-poster.jpg">
 <meta name="theme-color" content="#1f4d3a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,6 +55,7 @@
   }
 
   *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -65,11 +66,7 @@
   }
   h1, h2, h3, button, .big { font-family: Oswald, "Arial Narrow", Impact, sans-serif; }
 
-  .page {
-    max-width: 560px;
-    margin: 0 auto;
-    padding-bottom: 48px;
-  }
+  .page { max-width: 560px; margin: 0 auto; padding-bottom: 48px; }
   .poster {
     display: block;
     width: 100%;
@@ -96,7 +93,6 @@
     font-size: clamp(26px, 7vw, 34px);
     line-height: 1.1;
     font-weight: 700;
-    letter-spacing: .01em;
   }
   .band p { margin: 0; color: rgba(255, 255, 255, .88); }
 
@@ -109,6 +105,20 @@
     padding: 20px 16px;
     margin-top: 20px;
   }
+  .section-title {
+    margin: 32px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .card h2 {
+    margin: 0 0 14px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
 
   .notice {
     margin-top: 20px;
@@ -118,42 +128,112 @@
     border: 1px solid var(--brass);
     font-size: 15px;
   }
-  .notice code { font-size: 14px; }
 
-  label[for="name"] {
-    display: block;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  #name {
+  /* ---- Formulär ---- */
+  .field + .field { margin-top: 14px; }
+  .field label { display: block; font-weight: 700; margin-bottom: 6px; }
+  .field .opt { font-weight: 400; color: var(--muted); }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  input[type="text"], input[type="date"], input[type="time"] {
     display: block;
     width: 100%;
+    min-width: 0;
+    min-height: 50px;
     font: inherit;
     font-size: 18px;
-    padding: 12px 14px;
+    padding: 10px 14px;
     border-radius: 10px;
     border: 2px solid var(--line);
     background: var(--surface-2);
     color: var(--ink);
+    -webkit-appearance: none;
+    appearance: none;
   }
-  #name:focus-visible {
+  input:focus-visible {
     outline: 3px solid var(--brass);
     outline-offset: 2px;
     border-color: var(--brass);
   }
-  #name[aria-invalid="true"] { border-color: var(--error-ink); }
+  input[aria-invalid="true"] { border-color: var(--error-ink); }
   .hint { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+  .primary {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    min-height: 56px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--green);
+    color: #fff;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .primary:hover { filter: brightness(1.08); }
+  .primary:focus-visible { outline: 3px solid var(--brass); outline-offset: 3px; }
+  .primary[disabled] { opacity: .7; cursor: progress; }
+
+  /* ---- Förslagskort ---- */
+  .proposal { position: relative; }
+  .proposal.leader { border: 2px solid var(--brass); }
+  .badge {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--brass);
+    color: #fff;
+    font: 600 13px/1.6 Oswald, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  @media (prefers-color-scheme: dark) { .badge { color: #1a1408; } }
+  .proposal h3 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .when {
+    margin: 4px 0 0;
+    font: 600 17px/1.3 Oswald, sans-serif;
+    letter-spacing: .03em;
+    color: var(--brass);
+  }
+  .note { margin: 8px 0 0; overflow-wrap: anywhere; }
+  .by { margin: 6px 0 0; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+
+  .tally {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 14px;
+  }
+  .big { font-size: 52px; line-height: 1; font-weight: 700; color: var(--green); }
+  @media (prefers-color-scheme: dark) { .big { color: var(--brass); } }
+  .big-label {
+    font: 600 16px/1.2 Oswald, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sub-count { font-size: 15px; color: var(--muted); }
 
   .choices {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    margin-top: 18px;
+    margin-top: 14px;
   }
   @media (max-width: 340px) { .choices { grid-template-columns: 1fr; } }
   .choice {
     position: relative;
-    min-height: 68px;
+    min-height: 64px;
     padding: 10px 6px;
     border-radius: 12px;
     border: 2px solid var(--line);
@@ -170,10 +250,7 @@
   }
   .choice:hover { border-color: var(--brass); }
   .choice:active { transform: scale(.97); }
-  .choice:focus-visible {
-    outline: 3px solid var(--brass);
-    outline-offset: 3px;
-  }
+  .choice:focus-visible { outline: 3px solid var(--brass); outline-offset: 3px; }
   .choice[disabled] { cursor: progress; opacity: .7; }
   .choice[aria-pressed="true"] { color: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
   .choice[aria-pressed="true"]::after {
@@ -197,7 +274,7 @@
   }
 
   .msg {
-    margin: 16px 0 0;
+    margin: 14px 0 0;
     padding: 10px 12px;
     border-radius: 10px;
     font-weight: 600;
@@ -207,59 +284,18 @@
   .msg.error { background: var(--error-bg); color: var(--error-ink); }
   .msg.info  { background: var(--surface-2); color: var(--muted); }
 
-  .linkish {
-    margin-top: 14px;
-    padding: 4px 2px;
-    background: none;
-    border: 0;
-    color: var(--muted);
-    font: 400 15px/1.4 "Source Sans 3", sans-serif;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    cursor: pointer;
-  }
-  .linkish:hover { color: var(--ink); }
-  .linkish:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
-
-  .tally { text-align: center; padding-top: 24px; }
-  .big {
-    display: block;
-    font-size: 84px;
-    line-height: 1;
-    font-weight: 700;
-    color: var(--green);
-  }
-  @media (prefers-color-scheme: dark) { .big { color: var(--brass); } }
-  .big-label {
-    display: block;
-    margin-top: 2px;
-    font: 600 16px/1.2 Oswald, sans-serif;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .group { margin-top: 22px; }
-  .group h2 {
-    margin: 0 0 10px;
-    font-size: 18px;
-    font-weight: 600;
+  .group { margin-top: 16px; }
+  .group h4 {
+    margin: 0 0 8px;
+    font: 600 15px/1.3 Oswald, sans-serif;
     letter-spacing: .06em;
     text-transform: uppercase;
-    border-bottom: 2px solid var(--line);
-    padding-bottom: 6px;
+    color: var(--muted);
   }
-  .pills {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  .pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
   .pill {
     max-width: 100%;
-    padding: 6px 12px;
+    padding: 5px 12px;
     border-radius: 999px;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -282,6 +318,37 @@
     color: var(--brass);
   }
   .empty { margin: 0; color: var(--muted); font-style: italic; }
+
+  .links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 12px; }
+  .linkish {
+    padding: 4px 2px;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font: 400 15px/1.4 "Source Sans 3", sans-serif;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .linkish:hover { color: var(--ink); }
+  .linkish:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
+
+  .no-proposals { text-align: center; color: var(--muted); }
+
+  details.past { margin-top: 24px; }
+  details.past summary {
+    cursor: pointer;
+    padding: 6px 2px;
+    font: 600 16px/1.3 Oswald, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  details.past summary:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
+  .past-list { list-style: none; margin: 8px 0 0; padding: 0; }
+  .past-list li { padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .past-list .meta { display: block; font-size: 14px; color: var(--muted); }
+
   .updated { margin: 20px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
   .updated.error { color: var(--error-ink); font-weight: 600; }
 
@@ -289,108 +356,117 @@
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
 <main class="page">
   <img class="poster" src="aw-poster.jpg" width="1024" height="1536"
-       alt="Affisch: Fredags-AW på Churchill Arms – en öl, goda historier och tveksamma beslut">
+       alt="Affisch: Fredags-AW – dags igen! En öl, goda historier och tveksamma beslut">
 
   <header class="band">
-    <p class="eyebrow">AW · Fredag 16 oktober · Från 17.00</p>
-    <h1>Nytt ställe: Sue Ellen</h1>
-    <p>Stockholm. Säg till om du kommer, så vet vi hur många vi är.</p>
+    <p class="eyebrow">After work · Stockholm</p>
+    <h1>Nästa AW – var och när?</h1>
+    <p>Föreslå ett ställe och en tid, eller säg till vilka förslag som funkar för dig.</p>
   </header>
 
   <div class="wrap">
     <div id="config-notice" class="notice" hidden>
-      Sidan är inte kopplad till någon databas än. Fyll i <code>SUPABASE_URL</code> och
-      <code>SUPABASE_ANON_KEY</code> överst i skriptet i <code>index.html</code>.
+      Sidan är inte kopplad till någon databas än. Fyll i SUPABASE_URL och
+      SUPABASE_ANON_KEY överst i skriptet i index.html.
     </div>
 
-    <section class="card" aria-labelledby="rsvp-heading">
-      <h2 id="rsvp-heading" class="visually-hidden">Din anmälan</h2>
-      <form id="rsvp-form" novalidate>
+    <section class="card" aria-labelledby="me-heading">
+      <h2 id="me-heading" class="visually-hidden">Ditt namn</h2>
+      <div class="field">
         <label for="name">Ditt namn</label>
-        <input id="name" name="name" type="text" maxlength="40" autocomplete="name"
-               autocapitalize="words" enterkeyhint="done" aria-describedby="name-hint" required>
-        <p id="name-hint" class="hint">Max 40 tecken. Välj sedan ett svar nedan.</p>
-
-        <div class="choices" role="group" aria-label="Kommer du?">
-          <button type="button" class="choice" data-status="yes"   aria-pressed="false">Jag kommer</button>
-          <button type="button" class="choice" data-status="maybe" aria-pressed="false">Kanske</button>
-          <button type="button" class="choice" data-status="no"    aria-pressed="false">Kan inte</button>
-        </div>
-      </form>
-
-      <p id="msg" class="msg" role="status" aria-live="polite"></p>
-      <button id="remove" type="button" class="linkish" hidden>Ta bort min anmälan</button>
-    </section>
-
-    <section class="card tally" aria-labelledby="list-heading">
-      <h2 id="list-heading" class="visually-hidden">Vilka kommer</h2>
-      <span class="big" id="count-yes">–</span>
-      <span class="big-label">kommer</span>
-
-      <div style="text-align:left">
-        <div class="group" data-status="yes">
-          <h2>Kommer (<span data-count>0</span>)</h2>
-          <ul class="pills"></ul>
-        </div>
-        <div class="group" data-status="maybe">
-          <h2>Kanske (<span data-count>0</span>)</h2>
-          <ul class="pills"></ul>
-        </div>
-        <div class="group" data-status="no">
-          <h2>Kan inte (<span data-count>0</span>)</h2>
-          <ul class="pills"></ul>
-        </div>
+        <input id="name" type="text" maxlength="40" autocomplete="name" autocapitalize="words"
+               enterkeyhint="done" aria-describedby="name-hint" required>
+        <p id="name-hint" class="hint">Max 40 tecken. Används när du svarar eller föreslår.</p>
       </div>
-
-      <p id="updated" class="updated" aria-live="polite"></p>
+      <p id="name-msg" class="msg" role="status" aria-live="polite"></p>
     </section>
+
+    <h2 class="section-title" id="proposals-heading">Förslag</h2>
+    <div id="proposals" aria-labelledby="proposals-heading"></div>
+    <p id="no-proposals" class="card no-proposals" hidden>
+      Inga förslag än. Lägg till det första nedan!
+    </p>
+
+    <section class="card" aria-labelledby="new-heading">
+      <h2 id="new-heading">Föreslå en AW</h2>
+      <form id="new-form" novalidate>
+        <div class="field">
+          <label for="place">Var?</label>
+          <input id="place" type="text" maxlength="60" placeholder="T.ex. Sue Ellen, Kungsgatan" required>
+        </div>
+        <div class="field row">
+          <div>
+            <label for="date">Dag</label>
+            <input id="date" type="date" required>
+          </div>
+          <div>
+            <label for="time">Tid</label>
+            <input id="time" type="time" value="17:00" step="900" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="note">Kommentar <span class="opt">(valfritt)</span></label>
+          <input id="note" type="text" maxlength="140" placeholder="T.ex. vi sitter i bakre rummet">
+        </div>
+        <button id="new-submit" class="primary" type="submit">Lägg till förslag</button>
+      </form>
+      <p id="new-msg" class="msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <details id="past" class="past" hidden>
+      <summary>Tidigare AW:er (<span id="past-count">0</span>)</summary>
+      <ul id="past-list" class="past-list"></ul>
+    </details>
+
+    <p id="updated" class="updated" aria-live="polite"></p>
   </div>
 </main>
 
 <script>
-  // ==== FYLL I DESSA (Supabase: Project Settings → API / Data API) ====
+  // ==== FYLL I DESSA (Supabase: Project Settings → Data API / API Keys) ====
   const SUPABASE_URL = "https://xgmlpwegyebnnnwvppon.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_9FI06sf-4qJcNyewPXA2ew__PSPCIyw";
-  // ====================================================================
+  // =========================================================================
 
-  const STORAGE_KEY = "fredagsaw-2026-10-16";
+  const STORAGE_KEY = "aw-sida-v2";
+  const OLD_STORAGE_KEY = "fredagsaw-2026-10-16";
   const REFRESH_MS = 10000;
-  const MAX_NAME = 40;
+  const PAST_AFTER_MS = 6 * 3600 * 1000; // ett förslag räknas som passerat 6 h efter start
+  const TZ = "Europe/Stockholm";
 
+  const STATUSES = ["yes", "maybe", "no"];
   const LABELS = { yes: "Jag kommer", maybe: "Kanske", no: "Kan inte" };
+  const GROUP_LABELS = { yes: "Kommer", maybe: "Kanske", no: "Kan inte" };
   const CONFIRM = {
-    yes: "Toppen! Du står på listan. Vi ses på Sue Ellen 🍺",
-    maybe: "Noterat som kanske. Hoppas du kan!",
-    no: "Tråkigt! Du är noterad som ”kan inte”. Nästa gång kanske."
+    yes: (p) => "Toppen! Vi ses på " + p.place + " 🍺",
+    maybe: () => "Noterat som kanske. Hoppas du kan!",
+    no: () => "Tråkigt! Du är noterad som ”kan inte”."
   };
 
   const $ = (sel) => document.querySelector(sel);
-  const nameInput = $("#name");
-  const msg = $("#msg");
-  const removeBtn = $("#remove");
-  const choiceBtns = Array.from(document.querySelectorAll(".choice"));
+  const el = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
 
   const configured = !SUPABASE_URL.includes("DITT-PROJEKT") && !SUPABASE_ANON_KEY.includes("DIN-");
-  const API = SUPABASE_URL.replace(/\/+$/, "") + "/rest/v1/rsvp";
+  const BASE = SUPABASE_URL.replace(/\/+$/, "").replace(/\/rest\/v1$/, "") + "/rest/v1/";
 
-  // ---- Lokal state (token + egen anmälan) ----
+  // ---------- Lokal state ----------
+  // { token, name, rsvps: { [proposalId]: rsvpId }, proposals: [proposalId] }
   let memoryStore = null;
-  function loadMe() {
-    let me = null;
-    try { me = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (e) { me = memoryStore; }
-    if (!me || typeof me.token !== "string" || me.token.length < 20) {
-      me = { token: randomToken(), id: null, name: "", status: null };
-      saveMe(me);
-    }
-    return me;
+  function readStore(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; }
   }
-  function saveMe(me) {
+  function saveMe() {
     memoryStore = me;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(me)); } catch (e) { /* privat läge e.d. */ }
   }
@@ -399,18 +475,40 @@
     crypto.getRandomValues(bytes);
     return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   }
+  function loadMe() {
+    let m = readStore(STORAGE_KEY) || memoryStore;
+    if (!m || typeof m.token !== "string" || m.token.length < 20) {
+      const old = readStore(OLD_STORAGE_KEY); // behåll namn och token från första versionen
+      m = {
+        token: old && typeof old.token === "string" && old.token.length >= 20 ? old.token : randomToken(),
+        name: (old && old.name) || "",
+        rsvps: {},
+        proposals: []
+      };
+    }
+    m.rsvps = m.rsvps && typeof m.rsvps === "object" ? m.rsvps : {};
+    m.proposals = Array.isArray(m.proposals) ? m.proposals : [];
+    return m;
+  }
 
   let me = loadMe();
-  let saving = false;
+  saveMe();
+
+  let proposals = [];
+  let rsvps = [];
+  let busy = 0;
   let listSeq = 0;
+  const cards = new Map(); // proposalId -> { root, refs }
 
-  // ---- API ----
-  class ApiError extends Error {}
+  // ---------- API ----------
+  class ApiError extends Error {
+    constructor(status, detail) { super("api"); this.status = status; this.detail = detail || {}; }
+  }
 
-  async function api(query, { method = "GET", body, withToken = false, prefer } = {}) {
-    if (!configured) throw new ApiError("Sidan är inte kopplad till databasen än (Supabase-uppgifter saknas).");
+  async function api(path, { method = "GET", body, withToken = false, prefer } = {}) {
+    if (!configured) throw new ApiError(0, { code: "CONFIG" });
     const headers = { apikey: SUPABASE_ANON_KEY, Accept: "application/json" };
-    // Äldre anon-nycklar är JWT:er och ska även skickas som Bearer. Nya "publishable" nycklar räcker i apikey.
+    // Äldre anon-nycklar är JWT:er och skickas även som Bearer. Nya "publishable" räcker i apikey.
     if (SUPABASE_ANON_KEY.startsWith("eyJ")) headers.Authorization = "Bearer " + SUPABASE_ANON_KEY;
     if (body) headers["Content-Type"] = "application/json";
     if (withToken) headers["x-rsvp-token"] = me.token;
@@ -418,193 +516,490 @@
 
     let res;
     try {
-      res = await fetch(API + query, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+      res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
     } catch (e) {
-      throw new ApiError("Ingen kontakt med servern. Kolla din uppkoppling och försök igen.");
+      throw new ApiError(0, { code: "NETWORK" });
     }
     if (!res.ok) {
       let detail = {};
       try { detail = await res.json(); } catch (e) {}
-      throw new ApiError(friendlyError(res.status, detail));
+      throw new ApiError(res.status, detail);
     }
     if (res.status === 204) return null;
     const text = await res.text();
     return text ? JSON.parse(text) : null;
   }
 
-  function friendlyError(status, d) {
-    if (d.code === "23514") return "Kunde inte spara: namnet måste vara 1–40 tecken.";
-    if (d.code === "42501" || status === 401 || status === 403)
-      return "Kunde inte spara: åtkomst nekad. Kontrollera nyckeln och att SQL:en för behörigheter är körd.";
-    if (d.code === "42P01" || d.code === "PGRST205" || status === 404)
-      return "Kunde inte spara: tabellen rsvp hittades inte. Har SQL:en körts i Supabase?";
-    if (status === 429) return "För många försök på kort tid. Vänta en stund och försök igen.";
-    if (status >= 500) return "Servern svarar inte just nu (fel " + status + "). Försök igen om en liten stund.";
-    return "Kunde inte spara (fel " + status + (d.message ? ": " + d.message : "") + ").";
+  function errorText(verb, e) {
+    if (!(e instanceof ApiError)) return verb + ": något gick fel. Försök igen.";
+    const s = e.status, d = e.detail, c = d.code;
+    if (c === "CONFIG") return "Sidan är inte kopplad till databasen än (Supabase-uppgifter saknas).";
+    if (c === "NETWORK") return "Ingen kontakt med servern. Kolla din uppkoppling och försök igen.";
+    if (c === "23514") return verb + ": kontrollera att alla fält är rätt ifyllda.";
+    if (c === "23505") return verb + ": du har redan svarat på det här förslaget. Ladda om sidan.";
+    if (c === "23503") return verb + ": förslaget finns inte längre.";
+    if (c === "42P01" || c === "42703" || c === "PGRST204" || c === "PGRST205" || s === 404)
+      return verb + ": databasen behöver uppdateras. Kör supabase.sql i Supabase igen.";
+    if (c === "42501" || s === 401 || s === 403)
+      return verb + ": åtkomst nekad. Kontrollera nyckeln och att supabase.sql är körd.";
+    if (s === 429) return "För många försök på kort tid. Vänta en stund och försök igen.";
+    if (s >= 500) return verb + ": servern svarar inte just nu (fel " + s + "). Försök igen om en stund.";
+    return verb + " (fel " + s + (d.message ? ": " + d.message : "") + ").";
   }
 
-  // ---- UI-hjälp ----
-  function showMsg(text, kind) {
-    msg.className = "msg " + (kind || "info");
-    msg.textContent = text;
+  // ---------- Hjälpare ----------
+  function showMsg(node, text, kind) {
+    node.className = "msg " + (kind || "info");
+    node.textContent = text;
   }
-  function setBusy(busy) {
-    saving = busy;
-    choiceBtns.forEach((b) => { b.disabled = busy; });
-    removeBtn.disabled = busy;
-  }
-  function renderSelection() {
-    const current = me.id ? me.status : null;
-    choiceBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.status === current)));
-    removeBtn.hidden = !me.id;
-  }
+  function cleanName() { return $("#name").value.trim().replace(/\s+/g, " "); }
 
-  // ---- Spara / ändra ----
-  async function choose(status) {
-    if (saving) return;
-    const name = nameInput.value.trim().replace(/\s+/g, " ");
-    if (!name) {
-      nameInput.setAttribute("aria-invalid", "true");
-      showMsg("Skriv ditt namn först.", "error");
-      nameInput.focus();
-      return;
+  function requireName(msgNode) {
+    const input = $("#name");
+    const name = cleanName();
+    if (!name || name.length > 40) {
+      input.setAttribute("aria-invalid", "true");
+      showMsg(msgNode, name ? "Namnet får vara max 40 tecken." : "Skriv ditt namn högst upp först.", "error");
+      showMsg($("#name-msg"), "Skriv ditt namn här.", "error");
+      input.focus({ preventScroll: true });
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+      return null;
     }
-    if (name.length > MAX_NAME) {
-      nameInput.setAttribute("aria-invalid", "true");
-      showMsg("Namnet får vara max " + MAX_NAME + " tecken.", "error");
-      nameInput.focus();
-      return;
-    }
-    nameInput.removeAttribute("aria-invalid");
-    nameInput.value = name;
+    input.removeAttribute("aria-invalid");
+    input.value = name;
+    if (me.name !== name) { me.name = name; saveMe(); }
+    $("#name-msg").textContent = "";
+    return name;
+  }
 
-    setBusy(true);
-    showMsg("Sparar …", "info");
+  function formatWhen(iso) {
+    const d = new Date(iso);
+    const day = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long", timeZone: TZ }).format(d);
+    const time = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(d).replace(":", ".");
+    const sameYear = new Intl.DateTimeFormat("sv-SE", { year: "numeric", timeZone: TZ }).format(d) ===
+                     new Intl.DateTimeFormat("sv-SE", { year: "numeric", timeZone: TZ }).format(new Date());
+    const year = sameYear ? "" : " " + new Intl.DateTimeFormat("sv-SE", { year: "numeric", timeZone: TZ }).format(d);
+    const text = day + year + " · " + time;
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  // Tolka vald dag + tid som svensk tid, oavsett var besökaren befinner sig.
+  function stockholmTime(date, time) {
+    const [y, mo, d] = date.split("-").map(Number);
+    const [h, mi] = time.split(":").map(Number);
+    if ([y, mo, d, h, mi].some((v) => !Number.isFinite(v))) return new Date(NaN);
+    const wall = Date.UTC(y, mo - 1, d, h, mi);
+    const offsetAt = (ms) => {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+        timeZone: TZ, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric"
+      }).formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+      return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute) - ms;
+    };
+    let t = wall - offsetAt(wall);
+    t = wall - offsetAt(t);
+    return new Date(t);
+  }
+  function isPast(p) { return new Date(p.starts_at).getTime() < Date.now() - PAST_AFTER_MS; }
+
+  // ---------- Svar ----------
+  async function respond(p, status, card) {
+    if (card.busy) return;
+    const name = requireName(card.refs.msg);
+    if (!name) return;
+
+    setCardBusy(card, true);
+    showMsg(card.refs.msg, "Sparar …", "info");
     try {
-      let id = null;
-      if (me.id) {
-        const rows = await api("?id=eq." + encodeURIComponent(me.id) + "&select=id", {
-          method: "PATCH", body: { name, status }, withToken: true, prefer: "return=representation"
+      // RLS gör att PATCH bara träffar vår egen rad (via token) för det här förslaget.
+      let rows = await api("rsvp?proposal_id=eq." + encodeURIComponent(p.id) + "&select=id", {
+        method: "PATCH", body: { name, status }, withToken: true, prefer: "return=representation"
+      });
+      if (!rows || !rows.length) {
+        rows = await api("rsvp?select=id", {
+          method: "POST", body: { proposal_id: p.id, name, status, token: me.token }, prefer: "return=representation"
         });
-        if (Array.isArray(rows) && rows.length) id = rows[0].id;
       }
-      if (!id) {
-        // Ingen tidigare anmälan (eller den är borttagen) – skapa en ny.
-        const rows = await api("?select=id", {
-          method: "POST", body: { name, status, token: me.token }, prefer: "return=representation"
-        });
-        id = rows && rows[0] && rows[0].id;
-        if (!id) throw new ApiError("Kunde inte spara: oväntat svar från servern.");
-      }
-      me = { ...me, id, name, status };
-      saveMe(me);
-      renderSelection();
-      showMsg(CONFIRM[status], "ok");
+      const id = rows && rows[0] && rows[0].id;
+      if (!id) throw new Error("oväntat svar");
+      me.rsvps[p.id] = id;
+      saveMe();
+      // Visa direkt, innan nästa hämtning
+      rsvps = rsvps.filter((r) => r.id !== id).concat([{ id, proposal_id: p.id, name, status, created_at: new Date().toISOString() }]);
+      render();
+      showMsg(card.refs.msg, CONFIRM[status](p), "ok");
     } catch (e) {
-      showMsg(e instanceof ApiError ? e.message : "Något gick fel. Försök igen.", "error");
+      showMsg(card.refs.msg, errorText("Kunde inte spara", e), "error");
     } finally {
-      setBusy(false);
+      setCardBusy(card, false);
       refresh();
     }
   }
 
-  async function removeMine() {
-    if (saving || !me.id) return;
-    if (!confirm("Vill du ta bort din anmälan?")) return;
-    setBusy(true);
-    showMsg("Tar bort …", "info");
+  async function removeRsvp(p, card) {
+    if (card.busy) return;
+    setCardBusy(card, true);
+    showMsg(card.refs.msg, "Tar bort …", "info");
     try {
-      await api("?id=eq." + encodeURIComponent(me.id), { method: "DELETE", withToken: true, prefer: "return=minimal" });
-      me = { ...me, id: null, status: null };
-      saveMe(me);
-      renderSelection();
-      showMsg("Din anmälan är borttagen.", "ok");
+      await api("rsvp?proposal_id=eq." + encodeURIComponent(p.id), { method: "DELETE", withToken: true, prefer: "return=minimal" });
+      const id = me.rsvps[p.id];
+      delete me.rsvps[p.id];
+      saveMe();
+      rsvps = rsvps.filter((r) => r.id !== id);
+      render();
+      showMsg(card.refs.msg, "Ditt svar är borttaget.", "ok");
     } catch (e) {
-      showMsg(e instanceof ApiError ? e.message.replace("Kunde inte spara", "Kunde inte ta bort") : "Något gick fel. Försök igen.", "error");
+      showMsg(card.refs.msg, errorText("Kunde inte ta bort", e), "error");
     } finally {
-      setBusy(false);
+      setCardBusy(card, false);
       refresh();
     }
   }
 
-  // ---- Lista ----
+  async function removeProposal(p, card) {
+    if (card.busy) return;
+    if (!confirm("Ta bort förslaget ”" + p.place + "”? Alla svar på det försvinner också.")) return;
+    setCardBusy(card, true);
+    showMsg(card.refs.msg, "Tar bort förslaget …", "info");
+    try {
+      const rows = await api("aw_proposal?id=eq." + encodeURIComponent(p.id) + "&select=id", {
+        method: "DELETE", withToken: true, prefer: "return=representation"
+      });
+      if (!rows || !rows.length) {
+        showMsg(card.refs.msg, "Bara den som lade förslaget (från samma webbläsare) kan ta bort det.", "error");
+        return;
+      }
+      me.proposals = me.proposals.filter((id) => id !== p.id);
+      delete me.rsvps[p.id];
+      saveMe();
+      proposals = proposals.filter((x) => x.id !== p.id);
+      render();
+      showMsg($("#new-msg"), "Förslaget ”" + p.place + "” är borttaget.", "ok");
+    } catch (e) {
+      showMsg(card.refs.msg, errorText("Kunde inte ta bort förslaget", e), "error");
+    } finally {
+      setCardBusy(card, false);
+      refresh();
+    }
+  }
+
+  function setCardBusy(card, on) {
+    card.busy = on;
+    busy += on ? 1 : -1;
+    card.refs.buttons.forEach((b) => { b.disabled = on; });
+    card.refs.removeRsvp.disabled = on;
+    card.refs.removeProposal.disabled = on;
+  }
+
+  // ---------- Nytt förslag ----------
+  async function addProposal(ev) {
+    ev.preventDefault();
+    const msgNode = $("#new-msg");
+    const submit = $("#new-submit");
+    if (submit.disabled) return;
+
+    const placeIn = $("#place"), dateIn = $("#date"), timeIn = $("#time"), noteIn = $("#note");
+    [placeIn, dateIn, timeIn].forEach((i) => i.removeAttribute("aria-invalid"));
+
+    const name = requireName(msgNode);
+    if (!name) return;
+    const place = placeIn.value.trim().replace(/\s+/g, " ");
+    const note = noteIn.value.trim().replace(/\s+/g, " ");
+    const fail = (input, text) => { input.setAttribute("aria-invalid", "true"); input.focus(); showMsg(msgNode, text, "error"); };
+
+    if (!place) return fail(placeIn, "Skriv var ni ska ses.");
+    if (place.length > 60) return fail(placeIn, "Stället får vara max 60 tecken.");
+    if (!dateIn.value) return fail(dateIn, "Välj en dag.");
+    if (!timeIn.value) return fail(timeIn, "Välj en tid.");
+    const starts = stockholmTime(dateIn.value, timeIn.value);
+    if (isNaN(starts)) return fail(dateIn, "Ogiltigt datum eller tid.");
+    if (starts.getTime() < Date.now()) return fail(dateIn, "Tiden har redan passerat. Välj en senare tid.");
+    if (note.length > 140) return fail(noteIn, "Kommentaren får vara max 140 tecken.");
+
+    submit.disabled = true;
+    busy++;
+    showMsg(msgNode, "Sparar förslaget …", "info");
+    try {
+      const rows = await api("aw_proposal?select=id,place,starts_at,note,created_by,created_at", {
+        method: "POST",
+        body: { place, starts_at: starts.toISOString(), note: note || null, created_by: name, token: me.token },
+        prefer: "return=representation"
+      });
+      const p = rows && rows[0];
+      if (!p) throw new Error("oväntat svar");
+      me.proposals.push(p.id);
+      saveMe();
+      proposals = proposals.concat([p]);
+
+      // Den som föreslår kommer förstås själv.
+      try {
+        const r = await api("rsvp?select=id", {
+          method: "POST", body: { proposal_id: p.id, name, status: "yes", token: me.token }, prefer: "return=representation"
+        });
+        if (r && r[0]) {
+          me.rsvps[p.id] = r[0].id;
+          saveMe();
+          rsvps = rsvps.concat([{ id: r[0].id, proposal_id: p.id, name, status: "yes", created_at: new Date().toISOString() }]);
+        }
+      } catch (e) { /* förslaget är sparat; svaret kan man sätta själv */ }
+
+      render();
+      placeIn.value = "";
+      noteIn.value = "";
+      showMsg(msgNode, "Förslaget är tillagt och du står som ”kommer”. Dela länken!", "ok");
+      const card = cards.get(p.id);
+      if (card) card.root.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) {
+      showMsg(msgNode, errorText("Kunde inte spara förslaget", e), "error");
+    } finally {
+      submit.disabled = false;
+      busy--;
+      refresh();
+    }
+  }
+
+  // ---------- Rendering ----------
+  function buildCard(p) {
+    const root = el("article", "card proposal");
+    root.dataset.id = p.id;
+    const refs = {};
+    refs.badge = el("span", "badge", "Flest kommer");
+    refs.title = el("h3");
+    refs.when = el("p", "when");
+    refs.note = el("p", "note");
+    refs.by = el("p", "by");
+
+    const tally = el("div", "tally");
+    refs.count = el("span", "big", "0");
+    tally.append(refs.count, el("span", "big-label", "kommer"));
+    refs.subCount = el("span", "sub-count");
+    tally.append(refs.subCount);
+
+    const choices = el("div", "choices");
+    choices.setAttribute("role", "group");
+    refs.buttons = STATUSES.map((s) => {
+      const b = el("button", "choice", LABELS[s]);
+      b.type = "button";
+      b.dataset.status = s;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => respond(currentProposal(p.id), s, card));
+      return b;
+    });
+    choices.append(...refs.buttons);
+
+    refs.msg = el("p", "msg");
+    refs.msg.setAttribute("role", "status");
+    refs.msg.setAttribute("aria-live", "polite");
+
+    refs.groups = {};
+    const groupsWrap = el("div");
+    STATUSES.forEach((s) => {
+      const g = el("div", "group");
+      g.dataset.status = s;
+      const h = el("h4");
+      const ul = el("ul", "pills");
+      g.append(h, ul);
+      groupsWrap.append(g);
+      refs.groups[s] = { root: g, heading: h, list: ul };
+    });
+
+    const links = el("div", "links");
+    refs.removeRsvp = el("button", "linkish", "Ta bort mitt svar");
+    refs.removeRsvp.type = "button";
+    refs.removeRsvp.addEventListener("click", () => removeRsvp(currentProposal(p.id), card));
+    refs.removeProposal = el("button", "linkish", "Ta bort förslaget");
+    refs.removeProposal.type = "button";
+    refs.removeProposal.addEventListener("click", () => removeProposal(currentProposal(p.id), card));
+    links.append(refs.removeRsvp, refs.removeProposal);
+
+    root.append(refs.badge, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, links);
+    const card = { root, refs, busy: false };
+    return card;
+  }
+
+  function currentProposal(id) { return proposals.find((x) => x.id === id) || { id, place: "" }; }
+
+  function updateCard(card, p, rows, isLeader) {
+    const { refs } = card;
+    refs.badge.hidden = !isLeader;
+    card.root.classList.toggle("leader", isLeader);
+    refs.title.textContent = p.place;
+    refs.when.textContent = formatWhen(p.starts_at);
+    refs.note.textContent = p.note || "";
+    refs.note.hidden = !p.note;
+    refs.by.textContent = "Föreslaget av " + p.created_by;
+
+    const myId = me.rsvps[p.id];
+    const mine = rows.find((r) => r.id === myId);
+    const by = { yes: [], maybe: [], no: [] };
+    rows.forEach((r) => { if (by[r.status]) by[r.status].push(r); });
+
+    refs.count.textContent = String(by.yes.length);
+    const extra = [];
+    if (by.maybe.length) extra.push(by.maybe.length + " kanske");
+    if (by.no.length) extra.push(by.no.length + " kan inte");
+    refs.subCount.textContent = extra.length ? "· " + extra.join(" · ") : "";
+
+    refs.buttons.forEach((b) => b.setAttribute("aria-pressed", String(!!mine && mine.status === b.dataset.status)));
+    refs.buttons[0].parentElement.setAttribute("aria-label", "Kommer du till " + p.place + "?");
+
+    STATUSES.forEach((s) => {
+      const g = refs.groups[s];
+      const list = by[s];
+      g.root.hidden = s !== "yes" && !list.length;
+      g.heading.textContent = GROUP_LABELS[s] + " (" + list.length + ")";
+      g.list.replaceChildren();
+      if (!list.length) {
+        g.list.append(el("li", "empty", "Ingen än – bli först!"));
+        return;
+      }
+      list.forEach((r) => {
+        const li = el("li", "pill", r.name);
+        if (r.id === myId) {
+          li.classList.add("me");
+          li.append(el("span", "you", "du"));
+        }
+        g.list.append(li);
+      });
+    });
+
+    refs.removeRsvp.hidden = !mine;
+    refs.removeProposal.hidden = !me.proposals.includes(p.id);
+  }
+
+  function render() {
+    const byProposal = new Map();
+    rsvps.forEach((r) => {
+      if (!byProposal.has(r.proposal_id)) byProposal.set(r.proposal_id, []);
+      byProposal.get(r.proposal_id).push(r);
+    });
+
+    const sorted = proposals.slice().sort((a, b) =>
+      new Date(a.starts_at) - new Date(b.starts_at) || String(a.created_at).localeCompare(String(b.created_at)));
+    const upcoming = sorted.filter((p) => !isPast(p));
+    const past = sorted.filter(isPast).reverse();
+
+    const yesCount = (p) => (byProposal.get(p.id) || []).filter((r) => r.status === "yes").length;
+    const max = upcoming.reduce((m, p) => Math.max(m, yesCount(p)), 0);
+    const showLeader = upcoming.length > 1 && max > 0;
+
+    // Kort för kommande förslag (återanvänds så fokus och meddelanden finns kvar)
+    const container = $("#proposals");
+    const keep = new Set(upcoming.map((p) => p.id));
+    for (const [id, card] of cards) {
+      if (!keep.has(id)) { card.root.remove(); cards.delete(id); }
+    }
+    upcoming.forEach((p) => {
+      let card = cards.get(p.id);
+      if (!card) { card = buildCard(p); cards.set(p.id, card); }
+      updateCard(card, p, byProposal.get(p.id) || [], showLeader && yesCount(p) === max);
+    });
+    const desired = upcoming.map((p) => cards.get(p.id).root);
+    const current = Array.from(container.children);
+    if (desired.length !== current.length || desired.some((n, i) => n !== current[i])) {
+      desired.forEach((n) => container.append(n));
+    }
+    $("#no-proposals").hidden = upcoming.length > 0;
+
+    // Tidigare
+    $("#past").hidden = past.length === 0;
+    $("#past-count").textContent = String(past.length);
+    const pl = $("#past-list");
+    pl.replaceChildren();
+    past.forEach((p) => {
+      const li = el("li");
+      li.append(el("strong", null, p.place));
+      const n = yesCount(p);
+      li.append(el("span", "meta", formatWhen(p.starts_at) + " · " + n + " kom"));
+      pl.append(li);
+    });
+  }
+
   async function refresh() {
     if (!configured) return;
     const seq = ++listSeq;
     const updated = $("#updated");
     try {
-      const rows = await api("?select=id,name,status,created_at&order=created_at.asc");
-      if (seq !== listSeq) return; // ett nyare anrop har redan startat
-      if (me.id && !saving && !rows.some((r) => r.id === me.id)) {
-        // Vår anmälan finns inte längre (t.ex. borttagen i en annan flik).
-        me = { ...me, id: null, status: null };
-        saveMe(me);
-        renderSelection();
+      const [ps, rs] = await Promise.all([
+        api("aw_proposal?select=id,place,starts_at,note,created_by,created_at&order=starts_at.asc"),
+        api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc")
+      ]);
+      if (seq !== listSeq) return; // ett nyare anrop har startat
+      proposals = ps || [];
+      rsvps = rs || [];
+
+      if (!busy) {
+        // Städa lokala referenser som inte längre finns (t.ex. borttagna i en annan flik)
+        const pIds = new Set(proposals.map((p) => p.id));
+        const rIds = new Set(rsvps.map((r) => r.id));
+        let changed = false;
+        for (const pid of Object.keys(me.rsvps)) {
+          if (!pIds.has(pid) || !rIds.has(me.rsvps[pid])) { delete me.rsvps[pid]; changed = true; }
+        }
+        const kept = me.proposals.filter((id) => pIds.has(id));
+        if (kept.length !== me.proposals.length) { me.proposals = kept; changed = true; }
+        if (changed) saveMe();
       }
-      renderList(rows);
+
+      render();
       updated.classList.remove("error");
       updated.textContent = "Uppdateras automatiskt · senast " +
         new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     } catch (e) {
       if (seq !== listSeq) return;
       updated.classList.add("error");
-      updated.textContent = e instanceof ApiError
-        ? e.message.replace("Kunde inte spara", "Kunde inte hämta listan")
-        : "Kunde inte hämta listan.";
+      updated.textContent = errorText("Kunde inte hämta förslagen", e);
     }
   }
 
-  function renderList(rows) {
-    const groups = { yes: [], maybe: [], no: [] };
-    rows.forEach((r) => { if (groups[r.status]) groups[r.status].push(r); });
-
-    $("#count-yes").textContent = String(groups.yes.length);
-
-    document.querySelectorAll(".group").forEach((g) => {
-      const status = g.dataset.status;
-      const list = groups[status];
-      g.querySelector("[data-count]").textContent = String(list.length);
-      const ul = g.querySelector(".pills");
-      ul.replaceChildren();
-      if (!list.length) {
-        const li = document.createElement("li");
-        li.className = "empty";
-        li.textContent = status === "yes" ? "Ingen än – bli först!" : "Ingen.";
-        ul.appendChild(li);
-        return;
-      }
-      list.forEach((r) => {
-        const li = document.createElement("li");
-        li.className = "pill";
-        li.textContent = r.name;
-        if (r.id === me.id) {
-          li.classList.add("me");
-          const you = document.createElement("span");
-          you.className = "you";
-          you.textContent = "du";
-          li.appendChild(you);
-        }
-        ul.appendChild(li);
-      });
-    });
+  // Byter man namn uppdateras namnet på alla ens svar.
+  async function renameEverywhere() {
+    const name = cleanName();
+    const input = $("#name");
+    if (!name || name.length > 40) return;
+    input.value = name;
+    if (name === me.name) return;
+    me.name = name;
+    saveMe();
+    if (!configured || !Object.keys(me.rsvps).length) return;
+    busy++;
+    try {
+      await api("rsvp?proposal_id=not.is.null", { method: "PATCH", body: { name }, withToken: true, prefer: "return=minimal" });
+      showMsg($("#name-msg"), "Namnet är uppdaterat på dina svar.", "ok");
+    } catch (e) {
+      showMsg($("#name-msg"), errorText("Kunde inte uppdatera namnet", e), "error");
+    } finally {
+      busy--;
+      refresh();
+    }
   }
 
-  // ---- Start ----
-  choiceBtns.forEach((b) => b.addEventListener("click", () => choose(b.dataset.status)));
-  removeBtn.addEventListener("click", removeMine);
-  $("#rsvp-form").addEventListener("submit", (e) => e.preventDefault());
-  nameInput.addEventListener("input", () => nameInput.removeAttribute("aria-invalid"));
+  // ---------- Start ----------
+  function nextFriday() {
+    const d = new Date();
+    const add = (5 - d.getDay() + 7) % 7 || (d.getHours() >= 17 ? 7 : 0);
+    d.setDate(d.getDate() + add);
+    return d;
+  }
+  function isoDate(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
 
+  const nameInput = $("#name");
   nameInput.value = me.name || "";
-  renderSelection();
+  nameInput.addEventListener("input", () => { nameInput.removeAttribute("aria-invalid"); $("#name-msg").textContent = ""; });
+  nameInput.addEventListener("change", renameEverywhere);
+
+  $("#date").value = isoDate(nextFriday());
+  $("#date").min = isoDate(new Date());
+  ["place", "date", "time", "note"].forEach((id) =>
+    $("#" + id).addEventListener("input", (e) => e.target.removeAttribute("aria-invalid")));
+  $("#new-form").addEventListener("submit", addProposal);
 
   if (!configured) {
     $("#config-notice").hidden = false;
-    $("#count-yes").textContent = "0";
-    renderList([]);
+    render();
   } else {
     refresh();
-    setInterval(() => { if (!document.hidden && !saving) refresh(); }, REFRESH_MS);
+    setInterval(() => { if (!document.hidden && !busy) refresh(); }, REFRESH_MS);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   }
 </script>

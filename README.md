@@ -1,6 +1,7 @@
-# Fredags-AW – anmälningssida
+# AW – var och när?
 
-Enkel anmälningssida för AW på Sue Ellen (fredag 16 oktober, från 17.00).
+Enkel sida där gänget föreslår var och när nästa AW blir och svarar
+**Jag kommer / Kanske / Kan inte** på varje förslag. Alla med länken ser svaren live.
 Statisk sida (`index.html` + `aw-poster.jpg`) på GitHub Pages med Supabase som databas.
 Ingen inloggning, inget byggsteg.
 
@@ -13,11 +14,15 @@ Ingen inloggning, inget byggsteg.
 3. Öppna **SQL Editor** i vänstermenyn → **New query**, klistra in hela innehållet i
    [`supabase.sql`](supabase.sql) och klicka **Run**. Det ska stå "Success. No rows returned".
 
-SQL:en skapar tabellen `rsvp` (id, name, status, token, created_at) och slår på Row Level Security:
+SQL:en skapar tabellerna `aw_proposal` (förslag: ställe, tid, kommentar, vem) och `rsvp`
+(svar per förslag) och slår på Row Level Security:
 
-- alla får **läsa** (id, namn, status, tid) och **lägga till** anmälningar,
-- **ändra/ta bort** går bara om headern `x-rsvp-token` matchar radens token,
+- alla får **läsa** och **lägga till** förslag och svar,
+- **ändra/ta bort** sitt svar, eller **ta bort** sitt förslag, går bara om headern
+  `x-rsvp-token` matchar radens token (tas ett förslag bort försvinner svaren med),
 - kolumnen `token` går **inte** att läsa via API:t, så ingen kan sno någon annans token.
+
+**Uppgradera från första versionen:** kör bara hela `supabase.sql` igen. Den går att köra flera gånger.
 
 ## 2. Hämta URL och nyckel
 
@@ -49,12 +54,14 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 
 - Varje besökare får en slumpad token i `localStorage`. Den skickas med när man sparar
   och som header när man ändrar eller tar bort sin anmälan.
-- Samma webbläsare kan ändra sitt svar så många gånger den vill; byter man telefon/webbläsare
-  blir det en ny anmälan (den gamla kan då inte ändras därifrån).
+- Samma webbläsare kan ändra sina svar så många gånger den vill; byter man telefon/webbläsare
+  blir det nya svar (de gamla kan då inte ändras därifrån).
+- Tider tolkas och visas alltid i svensk tid. Förslag flyttas till "Tidigare AW:er" 6 timmar efter start.
+- Förslaget med flest "kommer" får etiketten **Flest kommer**.
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
 ## Rensa efteråt
 
-Ta bort alla anmälningar: kör `delete from public.rsvp;` i SQL Editor.
-Ta bort en enskild (t.ex. skräp): **Table Editor → rsvp**, markera raden → Delete.
+Ta bort allt: kör `delete from public.aw_proposal; delete from public.rsvp;` i SQL Editor.
+Ta bort enskilda rader (t.ex. skräp): **Table Editor → aw_proposal / rsvp**, markera raden → Delete.
