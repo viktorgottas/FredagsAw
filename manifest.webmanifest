@@ -1,0 +1,15 @@
+{
+  "name": "AW – var och när?",
+  "short_name": "AW",
+  "description": "Föreslå var och när nästa AW blir och säg till om du kommer.",
+  "lang": "sv",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1f4d3a",
+  "theme_color": "#1f4d3a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

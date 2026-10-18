@@ -9,6 +9,13 @@
 <meta property="og:description" content="Föreslå ett ställe och en tid, eller säg till vilka förslag som funkar för dig.">
 <meta property="og:image" content="aw-poster.jpg">
 <meta name="theme-color" content="#1f4d3a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AW">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -179,9 +186,10 @@
   /* ---- Förslagskort ---- */
   .proposal { position: relative; }
   .proposal.leader { border: 2px solid var(--brass); }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .badges:not(:has(.badge:not([hidden]))) { display: none; }
   .badge {
     display: inline-block;
-    margin-bottom: 8px;
     padding: 2px 10px;
     border-radius: 999px;
     background: var(--brass);
@@ -191,6 +199,28 @@
     text-transform: uppercase;
   }
   @media (prefers-color-scheme: dark) { .badge { color: #1a1408; } }
+  .badge.new { background: var(--green); color: #fff; }
+  .proposal.flash { animation: flash 1.6s ease-out 1; }
+  @keyframes flash { 0%, 30% { box-shadow: 0 0 0 4px var(--brass), var(--shadow); } 100% { box-shadow: var(--shadow); } }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: 600 15px/1.2 "Source Sans 3", sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .action:hover { border-color: var(--brass); }
+  .action:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .action svg { width: 17px; height: 17px; flex: none; }
   .proposal h3 {
     margin: 0;
     font-size: 26px;
@@ -362,10 +392,10 @@
 <body>
 <main class="page">
   <img class="poster" src="aw-poster.jpg" width="1024" height="1536"
-       alt="Affisch: Fredags-AW – dags igen! En öl, goda historier och tveksamma beslut">
+       alt="Affisch: After work – dags igen! En öl, goda historier och tveksamma beslut">
 
   <header class="band">
-    <p class="eyebrow">After work · Stockholm</p>
+    <p class="eyebrow">After work</p>
     <h1>Nästa AW – var och när?</h1>
     <p>Föreslå ett ställe och en tid, eller säg till vilka förslag som funkar för dig.</p>
   </header>
@@ -499,6 +529,30 @@
   let busy = 0;
   let listSeq = 0;
   const cards = new Map(); // proposalId -> { root, refs }
+  const newIds = new Set();  // förslag som tillkommit sedan förra besöket
+  let firstLoad = true;
+  let unseenWhileHidden = 0;
+  const baseTitle = document.title;
+  const LAST_SEEN_KEY = "aw-sida-senast-sedd";
+  let lastSeen = 0;
+  try { lastSeen = Number(localStorage.getItem(LAST_SEEN_KEY)) || 0; } catch (e) {}
+  const ICONS = {
+    share: '<path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+    cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    map: '<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>'
+  };
+  function icon(name) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = ICONS[name]; // fasta ikoner, aldrig användardata
+    return svg;
+  }
 
   // ---------- API ----------
   class ApiError extends Error {
@@ -598,6 +652,46 @@
     t = wall - offsetAt(t);
     return new Date(t);
   }
+  function proposalUrl(p) { return location.origin + location.pathname + "#forslag-" + p.id; }
+
+  async function shareProposal(p, card) {
+    const url = proposalUrl(p);
+    const text = "AW-förslag: " + p.place + ", " + formatWhen(p.starts_at).toLowerCase() + ". Kommer du?";
+    if (navigator.share) {
+      try { await navigator.share({ title: "AW – " + p.place, text, url }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try {
+      await navigator.clipboard.writeText(text + " " + url);
+      showMsg(card.refs.msg, "Länken är kopierad – klistra in den i gruppchatten.", "ok");
+    } catch (e) {
+      window.prompt("Kopiera länken:", url);
+    }
+  }
+
+  function icsDate(ms) { return new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
+  function icsEscape(t) { return String(t).replace(/\\/g, "\\\\").replace(/[,;]/g, (m) => "\\" + m).replace(/\r?\n/g, "\\n"); }
+  function calendarHref(p) {
+    const start = new Date(p.starts_at).getTime();
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AW//SV", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      "UID:" + p.id + "@aw",
+      "DTSTAMP:" + icsDate(Date.now()),
+      "DTSTART:" + icsDate(start),
+      "DTEND:" + icsDate(start + 3 * 3600 * 1000),
+      "SUMMARY:" + icsEscape("AW: " + p.place),
+      "LOCATION:" + icsEscape(p.place),
+      "DESCRIPTION:" + icsEscape((p.note ? p.note + "\n\n" : "") + "Svara här: " + proposalUrl(p)),
+      "URL:" + proposalUrl(p),
+      "END:VEVENT", "END:VCALENDAR"
+    ];
+    return "data:text/calendar;charset=utf-8," + encodeURIComponent(lines.join("\r\n"));
+  }
+  function mapHref(p) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.place + ", Stockholm");
+  }
+
   function isPast(p) { return new Date(p.starts_at).getTime() < Date.now() - PAST_AFTER_MS; }
 
   // ---------- Svar ----------
@@ -761,7 +855,10 @@
     const root = el("article", "card proposal");
     root.dataset.id = p.id;
     const refs = {};
+    const badges = el("div", "badges");
+    refs.newBadge = el("span", "badge new", "Nytt");
     refs.badge = el("span", "badge", "Flest kommer");
+    badges.append(refs.newBadge, refs.badge);
     refs.title = el("h3");
     refs.when = el("p", "when");
     refs.note = el("p", "note");
@@ -810,7 +907,21 @@
     refs.removeProposal.addEventListener("click", () => removeProposal(currentProposal(p.id), card));
     links.append(refs.removeRsvp, refs.removeProposal);
 
-    root.append(refs.badge, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, links);
+    const actions = el("div", "actions");
+    const share = el("button", "action");
+    share.type = "button";
+    share.append(icon("share"), document.createTextNode("Dela"));
+    share.addEventListener("click", () => shareProposal(currentProposal(p.id), card));
+    refs.cal = el("a", "action");
+    refs.cal.append(icon("cal"), document.createTextNode("Kalender"));
+    refs.cal.download = "aw.ics";
+    refs.map = el("a", "action");
+    refs.map.append(icon("map"), document.createTextNode("Hitta hit"));
+    refs.map.target = "_blank";
+    refs.map.rel = "noopener";
+    actions.append(share, refs.cal, refs.map);
+
+    root.append(badges, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, actions, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -820,6 +931,11 @@
   function updateCard(card, p, rows, isLeader) {
     const { refs } = card;
     refs.badge.hidden = !isLeader;
+    refs.newBadge.hidden = !newIds.has(p.id);
+    card.root.id = "forslag-" + p.id;
+    refs.cal.href = calendarHref(p);
+    refs.cal.download = "AW " + p.place.replace(/[^\p{L}\p{N} ]+/gu, "").trim() + ".ics";
+    refs.map.href = mapHref(p);
     card.root.classList.toggle("leader", isLeader);
     refs.title.textContent = p.place;
     refs.when.textContent = formatWhen(p.starts_at);
@@ -913,6 +1029,38 @@
     });
   }
 
+  function trackNew(known) {
+    let fresh = 0;
+    proposals.forEach((p) => {
+      if (me.proposals.includes(p.id) || isPast(p)) return;
+      const isNew = firstLoad
+        ? lastSeen > 0 && new Date(p.created_at).getTime() > lastSeen
+        : !known.has(p.id);
+      if (isNew && !newIds.has(p.id)) { newIds.add(p.id); fresh++; }
+    });
+    if (!firstLoad && fresh && document.hidden) {
+      unseenWhileHidden += fresh;
+      document.title = "(" + unseenWhileHidden + ") Nytt förslag · " + baseTitle;
+    }
+    if (firstLoad) {
+      firstLoad = false;
+      focusFromHash();
+    }
+    try { localStorage.setItem(LAST_SEEN_KEY, String(Date.now())); } catch (e) {}
+  }
+
+  let hashHandled = false;
+  function focusFromHash() {
+    if (hashHandled || !location.hash.startsWith("#forslag-")) return;
+    hashHandled = true;
+    requestAnimationFrame(() => {
+      const card = document.getElementById(location.hash.slice(1));
+      if (!card) return;
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+      card.classList.add("flash");
+    });
+  }
+
   async function refresh() {
     if (!configured) return;
     const seq = ++listSeq;
@@ -923,8 +1071,10 @@
         api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc")
       ]);
       if (seq !== listSeq) return; // ett nyare anrop har startat
+      const known = new Set(proposals.map((p) => p.id));
       proposals = ps || [];
       rsvps = rs || [];
+      trackNew(known);
 
       if (!busy) {
         // Städa lokala referenser som inte längre finns (t.ex. borttagna i en annan flik)
@@ -1000,7 +1150,12 @@
   } else {
     refresh();
     setInterval(() => { if (!document.hidden && !busy) refresh(); }, REFRESH_MS);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      unseenWhileHidden = 0;
+      document.title = baseTitle;
+      refresh();
+    });
   }
 </script>
 </body>

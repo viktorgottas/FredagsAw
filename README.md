@@ -45,7 +45,7 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 
 ## 3. Lägg ut på GitHub Pages
 
-1. Committa och pusha (`index.html`, `aw-poster.jpg`, `.nojekyll`) till GitHub.
+1. Committa och pusha alla filer (`index.html`, `aw-poster.jpg`, ikonerna, `manifest.webmanifest`, `.nojekyll`).
 2. I repot på GitHub: **Settings → Pages**. Under *Build and deployment*:
    **Source: Deploy from a branch**, **Branch: `master`**, mapp **`/ (root)`** → **Save**.
 3. Efter någon minut finns sidan på `https://<användarnamn>.github.io/<repo>/`.
@@ -57,7 +57,11 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - Samma webbläsare kan ändra sina svar så många gånger den vill; byter man telefon/webbläsare
   blir det nya svar (de gamla kan då inte ändras därifrån).
 - Tider tolkas och visas alltid i svensk tid. Förslag flyttas till "Tidigare AW:er" 6 timmar efter start.
-- Förslaget med flest "kommer" får etiketten **Flest kommer**.
+- Förslaget med flest "kommer" får etiketten **Flest kommer**, och förslag som tillkommit sedan
+  ditt förra besök märks **Nytt**.
+- Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
+  (.ics-fil) och **Hitta hit** (Google Maps). Delade länkar går direkt till förslaget.
+- Sidan kan läggas på hemskärmen som en app (Safari: Dela → Lägg till på hemskärmen).
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
