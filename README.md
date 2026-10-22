@@ -75,8 +75,10 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   svarar "Jag kommer".
 - **Väder** för AW-tiden (Open-Meteo, Stockholm, upp till 16 dagar fram; ingen nyckel behövs),
   och en slumpad rolig kommentar (regn/kallt/snö/åska: "vi håller oss inne"-skämt, sol: uteservering).
-- **🎲 Slumpa** bredvid "Var?" slumpar en bar från listan `BARS` i `index.html` plus ställen ni
-  redan föreslagit. Ändra listan fritt.
+- **🎲 Slumpa** bredvid "Var?" slumpar en bar innanför tullarna från listan `BARS` i `index.html`
+  plus ställen ni redan föreslagit. Ändra listan fritt.
+- **Pris på en stor stark** sparas per ställe (`aw_place_price`, via `aw_set_price`) och visas på alla
+  förslag på samma ställe och som tips i formuläret. Vem som helst kan lägga in eller ändra priset.
 - **Vem bjuder på första rundan?** slumpas (i databasen, `aw_draw_buyer`) bland dem som kommer,
   när minst två har svarat ja. Alla ser samma namn. Kommer nya personer efter slumpningen kan vem
   som helst slumpa om (bland alla som kommer); annars kan bara admin slumpa om.

@@ -387,6 +387,8 @@
 
   /* ---- Väder & slumpa bar ---- */
   .weather { margin: 4px 0 0; font-size: 15px; }
+  .price { margin: 4px 0 0; font-size: 15px; font-weight: 600; }
+  .price .linkish { margin: 0; padding: 0 2px; font-weight: 400; font-size: 14px; }
   .weather .tip { display: block; margin-top: 2px; color: var(--muted); font-style: italic; }
   .place-row { display: flex; gap: 8px; }
   .place-row input { flex: 1; }
@@ -732,6 +734,7 @@
               <input id="place" type="text" maxlength="60" placeholder="T.ex. Sue Ellen, Kungsgatan" required>
               <button id="random-bar" type="button" class="random-bar" aria-label="Slumpa en bar">🎲 Slumpa</button>
             </div>
+            <p id="place-price" class="hint" hidden></p>
           </div>
           <div class="field row">
             <div>
@@ -1331,12 +1334,23 @@
 
   // ---------- Slumpa bar ----------
   // Ändra gärna listan! Ställen ni redan varit på kommer också med i slumpningen.
+  // Bara innanför tullarna.
   const BARS = [
+    // Södermalm
     "Pelikan, Södermalm", "Kvarnen, Södermalm", "Akkurat, Södermalm", "Oliver Twist, Södermalm",
-    "Mosebacke, Södermalm", "Snaps, Södermalm", "Morfar Ginko, Södermalm", "Gondolen, Slussen",
-    "Monks Porter House, Gamla stan", "Wirströms Pub, Gamla stan", "Tranan, Vasastan",
-    "Churchill Arms, Vasastan", "Sturehof, Östermalm", "Riche, Östermalm", "Sue Ellen",
-    "Mälarpaviljongen, Kungsholmen", "Trädgården, Skanstull", "Half Way Inn, Södermalm"
+    "Mosebacke, Södermalm", "Snaps, Södermalm", "Morfar Ginko, Södermalm", "Half Way Inn, Södermalm",
+    "Söders Hjärta, Södermalm", "Folkhemmet, Södermalm", "Pet Sounds Bar, Södermalm",
+    "Omnipollos hatt, Södermalm", "Blå Dörren, Södermalm", "Linje Tio, Södermalm",
+    "Himlen, Södermalm", "Gondolen, Slussen",
+    // Gamla stan
+    "Monks Porter House, Gamla stan", "Wirströms Pub, Gamla stan", "The Liffey, Gamla stan",
+    "Zum Franziskaner, Gamla stan", "Stampen, Gamla stan",
+    // Vasastan & Norrmalm
+    "Tranan, Vasastan", "Churchill Arms, Vasastan", "Tennstopet, Vasastan", "Pub Anchor, Vasastan",
+    "Operabaren, Norrmalm", "Berns, Norrmalm", "Cadier Bar, Blasieholmen",
+    // Östermalm & Kungsholmen
+    "Sturehof, Östermalm", "Riche, Östermalm", "Mälarpaviljongen, Kungsholmen",
+    "Sue Ellen"
   ];
   async function randomBar() {
     const btn = $("#random-bar"), input = $("#place");
@@ -1360,9 +1374,50 @@
     }
     input.value = pick;
     input.removeAttribute("aria-invalid");
+    updatePlaceHint();
     btn.disabled = false;
     confetti(10);
     showMsg($("#new-msg"), "🎲 Det blev " + pick + "! Välj dag och tid – eller slumpa igen.", "info");
+  }
+
+  // ---------- Pris på en stor stark ----------
+  let prices = new Map();       // place_key -> { price, reported_by, updated_at, place }
+  let pricesAvailable = false;
+  const placeKey = (place) => String(place || "").split(",")[0].trim().toLowerCase();
+  const priceFor = (place) => prices.get(placeKey(place));
+  function priceAge(iso) {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+    if (days < 1) return "i dag";
+    if (days === 1) return "i går";
+    if (days < 31) return "för " + days + " dagar sedan";
+    const months = Math.round(days / 30);
+    return months < 12 ? "för " + months + (months === 1 ? " månad" : " månader") + " sedan" : "för över ett år sedan";
+  }
+  async function askPrice(place, msgNode) {
+    const name = requireName(msgNode);
+    if (!name) return;
+    const cur = priceFor(place);
+    const raw = window.prompt("Vad kostar en stor stark på " + place.split(",")[0].trim() + "? (kr)", cur ? String(cur.price) : "");
+    if (raw === null) return;
+    const price = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
+    if (!(price >= 10 && price <= 300)) { showMsg(msgNode, "Skriv ett pris mellan 10 och 300 kr.", "error"); return; }
+    try {
+      await api("rpc/aw_set_price", { method: "POST", body: { p_place: place, p_price: price, p_name: name } });
+      prices.set(placeKey(place), { price, reported_by: name, updated_at: new Date().toISOString(), place });
+      render();
+      updatePlaceHint();
+      showMsg(msgNode, "Tack! En stor stark kostar " + price + " kr. 🍺", "ok");
+    } catch (e) {
+      showMsg(msgNode, errorText("Kunde inte spara priset", e), "error");
+    }
+  }
+  // Tips under "Var?" i formuläret
+  function updatePlaceHint() {
+    const hint = $("#place-price");
+    const v = $("#place").value.trim();
+    const pr = v && !$("#secret").checked ? priceFor(v) : null;
+    hint.hidden = !pr;
+    hint.textContent = pr ? "🍺 En stor stark här kostar " + pr.price + " kr (" + pr.reported_by + ", " + priceAge(pr.updated_at) + ")" : "";
   }
 
   // ---------- Nedräkning ----------
@@ -1382,9 +1437,11 @@
 
   // ---------- Hemlig plats ----------
   let revealPending = false;
+  let revealTriedAt = 0;
   async function revealDue() {
-    if (revealPending) return;
+    if (revealPending || Date.now() - revealTriedAt < 20000) return; // max var 20:e sekund
     revealPending = true;
+    revealTriedAt = Date.now();
     try { await api("rpc/aw_reveal_due", { method: "POST", body: {} }); } catch (e) { /* cron sköter det annars */ }
     finally { revealPending = false; refresh(); }
   }
@@ -1896,6 +1953,10 @@
       noteIn.value = "";
       $("#secret").checked = false;
       $("#secret-fields").hidden = true;
+      $("#reveal-date").value = "";
+      $("#reveal-time").value = "";
+      revealTouched = false;
+      $("#place").placeholder = "T.ex. Sue Ellen, Kungsgatan";
       showMsg(msgNode, "Förslaget är tillagt och du står som ”kommer”.", "ok");
       showTab("feed");
       const card = cards.get(p.id);
@@ -1931,6 +1992,12 @@
     refs.secretMine = el("span", "mine");
     refs.secretInfo.append(refs.secretText, refs.secretMine);
     refs.note = el("p", "note");
+    refs.price = el("p", "price");
+    refs.priceText = el("span");
+    refs.priceBtn = el("button", "linkish");
+    refs.priceBtn.type = "button";
+    refs.priceBtn.addEventListener("click", () => askPrice(currentProposal(p.id).place, card.refs.msg));
+    refs.price.append(refs.priceText, refs.priceBtn);
     refs.by = el("p", "by");
 
     // Ändra-formulär (dolt tills man trycker "Ändra")
@@ -2110,7 +2177,7 @@
 
     refs.photoBlock = buildPhotoBlock(p.id);
 
-    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.weather, refs.secretInfo, refs.note, refs.by, ef.root,
+    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.weather, refs.secretInfo, refs.price, refs.note, refs.by, ef.root,
       tally, choices, refs.msg, groupsWrap, buyer.root, refs.photoBlock.root, cwrap, actionsWrap, links);
     const card = { root, refs, busy: false };
     return card;
@@ -2151,6 +2218,13 @@
     refs.weather.hidden = !w;
     refs.weatherText.textContent = w ? w.text : "";
     refs.weatherTip.textContent = w && w.tip ? w.tip : "";
+
+    // Pris på en stor stark (inte för hemliga platser)
+    const pr = priceFor(p.place);
+    refs.price.hidden = !pricesAvailable || !!p.reveal_at;
+    refs.priceText.textContent = pr ? "🍺 Stor stark: " + pr.price + " kr " : "🍺 ";
+    refs.priceText.title = pr ? "Enligt " + pr.reported_by + ", " + priceAge(pr.updated_at) : "";
+    refs.priceBtn.textContent = pr ? "ändra" : "Vad kostar en stor stark här?";
 
     // Hemlig plats
     const secret = !!p.reveal_at;
@@ -2383,6 +2457,7 @@
     }
     $("#no-proposals").hidden = upcoming.length > 0;
     updateFeedBadge();
+    updatePlaceHint();
 
     // Minnen: AW:er som har varit och som någon gick på
     const memories = proposals.filter((p) => isPast(p) && yesCount(p) > 0)
@@ -2459,12 +2534,13 @@
           }
         }
       };
-      const [ps, rs, cs, phs] = await Promise.all([
+      const [ps, rs, cs, phs, prs] = await Promise.all([
         getProposals(),
         api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc"),
         // Kommentarer får inte sänka hela sidan om tabellen saknas (gammal SQL)
         api("aw_comment?select=id,proposal_id,name,body,created_at&order=created_at.asc").catch((e) => e),
-        api("aw_photo?select=id,proposal_id,path,name,created_at&order=created_at.asc").catch((e) => e)
+        api("aw_photo?select=id,proposal_id,path,name,created_at&order=created_at.asc").catch((e) => e),
+        api("aw_place_price?select=place_key,place,price,reported_by,updated_at").catch((e) => e)
       ]);
       if (seq !== listSeq) return; // ett nyare anrop har startat
       const known = new Set(proposals.map((p) => p.id));
@@ -2476,6 +2552,8 @@
         commentsAvailable = true;
         comments = cs || [];
       }
+      pricesAvailable = !(prs instanceof Error);
+      if (pricesAvailable) prices = new Map((prs || []).map((x) => [x.place_key, x]));
       photosAvailable = !(phs instanceof Error);
       if (photosAvailable) photos = phs || [];
       trackNew(known);
@@ -2555,18 +2633,25 @@
     $("#" + id).addEventListener("input", (e) => e.target.removeAttribute("aria-invalid")));
   $("#new-form").addEventListener("submit", addProposal);
   $("#random-bar").addEventListener("click", randomBar);
+  $("#place").addEventListener("input", updatePlaceHint);
+  $("#secret").addEventListener("change", updatePlaceHint);
+  // Avslöjandet följer AW:ns dag/tid (2 h före) tills man själv ändrar det
+  let revealTouched = false;
+  function syncReveal() {
+    if (!$("#secret").checked || revealTouched) return;
+    const [h, m] = ($("#time").value || "17:00").split(":").map(Number);
+    const t = Math.max(0, h * 60 + m - 120);
+    $("#reveal-date").value = $("#date").value;
+    $("#reveal-time").value = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+  }
   $("#secret").addEventListener("change", () => {
     const on = $("#secret").checked;
     $("#secret-fields").hidden = !on;
-    if (on && !$("#reveal-date").value) {
-      // Förslag: samma dag, två timmar före start
-      const [h, m] = ($("#time").value || "17:00").split(":").map(Number);
-      const t = Math.max(0, h * 60 + m - 120);
-      $("#reveal-date").value = $("#date").value;
-      $("#reveal-time").value = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
-    }
+    syncReveal();
     $("#place").placeholder = on ? "Den hemliga platsen (visas först vid avslöjandet)" : "T.ex. Sue Ellen, Kungsgatan";
   });
+  ["date", "time"].forEach((id) => ["input", "change"].forEach((ev) => $("#" + id).addEventListener(ev, syncReveal)));
+  ["reveal-date", "reveal-time"].forEach((id) => $("#" + id).addEventListener("input", () => { revealTouched = true; }));
 
   // ---------- Admin ----------
   // Öppna sidan med #admin för att logga in med admin-koden.

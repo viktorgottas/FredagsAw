@@ -263,12 +263,18 @@ grant execute on function public.aw_reveal_due() to anon;
 
 do $$
 begin
-  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
-    create extension if not exists pg_cron;
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    begin
+      create extension if not exists pg_cron;
+    exception when others then
+      raise notice 'pg_cron kunde inte aktiveras (%). Slå på det under Database → Extensions och kör filen igen.', sqlerrm;
+    end;
+  end if;
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
     perform cron.schedule('aw-reveal', '* * * * *', 'select public.aw_reveal_due()');
   end if;
 exception when others then
-  raise notice 'pg_cron kunde inte aktiveras (%). Platser avslöjas ändå när någon öppnar sidan.', sqlerrm;
+  raise notice 'Kunde inte schemalägga avslöjandet (%). Platser avslöjas ändå när någon öppnar sidan.', sqlerrm;
 end
 $$;
 
@@ -438,3 +444,48 @@ drop policy if exists "aw-photos uppladdning" on storage.objects;
 create policy "aw-photos uppladdning" on storage.objects
   for insert to anon
   with check (bucket_id = 'aw-photos' and name ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.jpg$');
+
+-- ---------- Pris på en stor stark ----------
+-- Ett pris per ställe (nyckel = namnet före första kommatecknet, gemener), så det följer med
+-- till alla framtida förslag på samma ställe. Vem som helst kan lägga in/uppdatera via aw_set_price.
+create table if not exists public.aw_place_price (
+  place_key   text        primary key,
+  place       text        not null,
+  price       int         not null check (price between 10 and 300),
+  reported_by text        not null check (char_length(btrim(reported_by)) between 1 and 40),
+  updated_at  timestamptz not null default now()
+);
+alter table public.aw_place_price enable row level security;
+drop policy if exists "alla kan se priser" on public.aw_place_price;
+create policy "alla kan se priser" on public.aw_place_price for select to anon using (true);
+revoke all on public.aw_place_price from anon, authenticated;
+grant select (place_key, place, price, reported_by, updated_at) on public.aw_place_price to anon;
+
+create or replace function public.aw_place_key(p_place text)
+returns text
+language sql
+immutable
+as $$ select btrim(lower(split_part(coalesce(p_place, ''), ',', 1))) $$;
+
+create or replace function public.aw_set_price(p_place text, p_price int, p_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare k text := aw_place_key(p_place);
+begin
+  if k = '' or char_length(k) > 60 then
+    raise exception 'Ogiltigt ställe' using errcode = '22023';
+  end if;
+  if p_price is null or p_price < 10 or p_price > 300 then
+    raise exception 'Priset måste vara mellan 10 och 300 kr' using errcode = '22023';
+  end if;
+  insert into aw_place_price (place_key, place, price, reported_by, updated_at)
+  values (k, btrim(split_part(p_place, ',', 1)), p_price, btrim(p_name), now())
+  on conflict (place_key) do update
+    set price = excluded.price, reported_by = excluded.reported_by, updated_at = now();
+end
+$$;
+revoke all on function public.aw_set_price(text, int, text) from public, anon, authenticated;
+grant execute on function public.aw_set_price(text, int, text) to anon;
