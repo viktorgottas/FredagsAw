@@ -202,6 +202,10 @@
   }
   @media (prefers-color-scheme: dark) { .badge { color: #1a1408; } }
   .badge.new { background: var(--green); color: #fff; }
+  .badge.next { background: #c0392b; color: #fff; }
+  .badge.latest { background: #2c6e9b; color: #fff; }
+  .badge.party { background: #8e44ad; color: #fff; }
+  .badge.lonely { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
   .proposal.flash { animation: flash 1.6s ease-out 1; }
   @keyframes flash { 0%, 30% { box-shadow: 0 0 0 4px var(--brass), var(--shadow); } 100% { box-shadow: var(--shadow); } }
 
@@ -1901,9 +1905,7 @@
     root.dataset.id = p.id;
     const refs = {};
     const badges = el("div", "badges");
-    refs.newBadge = el("span", "badge new", "Nytt");
-    refs.badge = el("span", "badge", "Flest kommer");
-    badges.append(refs.newBadge, refs.badge);
+    refs.badges = badges;
     refs.title = el("h3");
     refs.when = el("p", "when");
     refs.countdown = el("p", "countdown");
@@ -2103,10 +2105,27 @@
 
   function currentProposal(id) { return proposals.find((x) => x.id === id) || { id, place: "" }; }
 
-  function updateCard(card, p, rows, isLeader) {
+  function renderBadges(card, list) {
+    const key = list.map((b) => b.cls + b.text).join("|");
+    if (card.badgeKey === key) return;
+    card.badgeKey = key;
+    card.refs.badges.replaceChildren(...list.map((b) => el("span", "badge " + b.cls, b.text)));
+  }
+
+  function updateCard(card, p, rows, isLeader, flags = {}) {
     const { refs } = card;
-    refs.badge.hidden = !isLeader;
-    refs.newBadge.hidden = !newIds.has(p.id);
+    const yesN = rows.filter((r) => r.status === "yes").length;
+    const startMs = new Date(p.starts_at).getTime();
+    const badgeList = [];
+    if (startMs <= Date.now() && startMs > Date.now() - 4 * 3600e3) badgeList.push({ cls: "next", text: "🍻 Pågår nu" });
+    else if (startMs > Date.now() && dayKey(new Date(p.starts_at)) === dayKey(new Date())) badgeList.push({ cls: "next", text: "🔥 I dag!" });
+    else if (flags.next && startMs > Date.now()) badgeList.push({ cls: "next", text: "⏭️ Nästa AW" });
+    if (newIds.has(p.id)) badgeList.push({ cls: "new", text: "✨ Nytt" });
+    else if (flags.latest) badgeList.push({ cls: "latest", text: "🆕 Senast inlagd" });
+    if (isLeader) badgeList.push({ cls: "", text: "👑 Flest kommer" });
+    if (yesN >= 6) badgeList.push({ cls: "party", text: "🎉 Fullt ös" });
+    else if (yesN === 1) badgeList.push({ cls: "lonely", text: "🐺 Ensamvarg – häng på!" });
+    renderBadges(card, badgeList);
     card.root.id = "forslag-" + p.id;
     refs.calGoogle.href = googleCalendarUrl(p);
     refs.calOutlook.href = outlookCalendarUrl(p);
@@ -2318,10 +2337,15 @@
       byProposal.get(r.proposal_id).push(r);
     });
 
-    // Senast tillagda förslaget överst
+    // Nästa AW överst (efter datum); samma tid → senast inlagd först
     const sorted = proposals.slice().sort((a, b) =>
+      new Date(a.starts_at) - new Date(b.starts_at) ||
       new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)));
     const upcoming = sorted.filter((p) => !isPast(p));
+    // "Nästa": den närmaste som inte har börjat än
+    const nextP = upcoming.find((p) => new Date(p.starts_at).getTime() > Date.now());
+    const latestP = upcoming.length > 1
+      ? upcoming.reduce((a, b) => (new Date(b.created_at) > new Date(a.created_at) ? b : a)) : null;
 
     const yesCount = (p) => (byProposal.get(p.id) || []).filter((r) => r.status === "yes").length;
     const max = upcoming.reduce((m, p) => Math.max(m, yesCount(p)), 0);
@@ -2336,7 +2360,8 @@
     upcoming.forEach((p) => {
       let card = cards.get(p.id);
       if (!card) { card = buildCard(p); cards.set(p.id, card); }
-      updateCard(card, p, byProposal.get(p.id) || [], showLeader && yesCount(p) === max);
+      updateCard(card, p, byProposal.get(p.id) || [], showLeader && yesCount(p) === max,
+        { next: nextP && nextP.id === p.id, latest: latestP && latestP.id === p.id });
     });
     const desired = upcoming.map((p) => cards.get(p.id).root);
     const current = Array.from(container.children);

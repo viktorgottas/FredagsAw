@@ -58,7 +58,8 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   blir det nya svar (de gamla kan då inte ändras därifrån).
 - Tider tolkas och visas alltid i svensk tid. Förslag ligger kvar hela sin dag och tas sedan bort
   automatiskt (sidan anropar `cleanup_past_proposals()` när någon öppnar den; svaren följer med).
-- Senast tillagda förslaget visas överst.
+- Förslagen sorteras efter datum (nästa AW överst) och får etiketter: Nästa AW / I dag! / Pågår nu,
+  Nytt / Senast inlagd, Flest kommer, Fullt ös (6+) och Ensamvarg (bara en kommer).
 - Förslaget med flest "kommer" får etiketten **Flest kommer**, och förslag som tillkommit sedan
   ditt förra besök märks **Nytt**.
 - Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
