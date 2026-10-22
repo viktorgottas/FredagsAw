@@ -86,5 +86,25 @@ grant insert (proposal_id, name, status, token)          on public.rsvp to anon;
 grant update (name, status)                              on public.rsvp to anon;
 grant delete                                             on public.rsvp to anon;
 
+-- ---------- Städning ----------
+-- Tar bort förslag vars dag (svensk tid) har passerat; svaren följer med.
+-- Sidan anropar den när någon öppnar den. Den kan bara radera passerade förslag.
+create or replace function public.cleanup_past_proposals()
+returns integer
+language sql
+security definer
+set search_path = public
+as $$
+  with removed as (
+    delete from public.aw_proposal
+    where (starts_at at time zone 'Europe/Stockholm')::date
+        < (now() at time zone 'Europe/Stockholm')::date
+    returning 1
+  )
+  select count(*)::int from removed
+$$;
+revoke all on function public.cleanup_past_proposals() from public, anon, authenticated;
+grant execute on function public.cleanup_past_proposals() to anon;
+
 -- Gamla svar från första versionen (utan förslag) visas inte längre.
 -- Vill du städa bort dem: delete from public.rsvp where proposal_id is null;

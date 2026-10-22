@@ -56,7 +56,8 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   och som header när man ändrar eller tar bort sin anmälan.
 - Samma webbläsare kan ändra sina svar så många gånger den vill; byter man telefon/webbläsare
   blir det nya svar (de gamla kan då inte ändras därifrån).
-- Tider tolkas och visas alltid i svensk tid. Förslag flyttas till "Tidigare AW:er" 6 timmar efter start.
+- Tider tolkas och visas alltid i svensk tid. Förslag ligger kvar hela sin dag och tas sedan bort
+  automatiskt (sidan anropar `cleanup_past_proposals()` när någon öppnar den; svaren följer med).
 - Förslaget med flest "kommer" får etiketten **Flest kommer**, och förslag som tillkommit sedan
   ditt förra besök märks **Nytt**.
 - Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
