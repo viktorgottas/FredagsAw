@@ -327,6 +327,28 @@
   .snap-btn svg { width: 22px; height: 22px; }
   .snap-prompt .linkish { display: block; margin: 8px auto 0; color: #333; }
 
+  /* ---- Väder & slumpa bar ---- */
+  .weather { margin: 4px 0 0; font-size: 15px; }
+  .weather .tip { color: var(--muted); }
+  .place-row { display: flex; gap: 8px; }
+  .place-row input { flex: 1; }
+  .random-bar {
+    flex: none;
+    min-height: 50px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 2px solid var(--brass);
+    background: var(--brass-soft);
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .random-bar:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .random-bar[disabled] { opacity: .7; cursor: progress; }
+
   /* ---- Nedräkning ---- */
   .countdown { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--muted); }
 
@@ -635,7 +657,10 @@
       <form id="new-form" novalidate>
         <div class="field">
           <label for="place">Var?</label>
-          <input id="place" type="text" maxlength="60" placeholder="T.ex. Sue Ellen, Kungsgatan" required>
+          <div class="place-row">
+            <input id="place" type="text" maxlength="60" placeholder="T.ex. Sue Ellen, Kungsgatan" required>
+            <button id="random-bar" type="button" class="random-bar" aria-label="Slumpa en bar">🎲 Slumpa</button>
+          </div>
         </div>
         <div class="field row">
           <div>
@@ -1068,6 +1093,86 @@
       document.body.append(c);
       setTimeout(() => c.remove(), 4000);
     }
+  }
+
+  // ---------- Väder (Open-Meteo, Stockholm) ----------
+  const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=59.3293&longitude=18.0686" +
+    "&hourly=temperature_2m,precipitation_probability,weather_code&timezone=Europe%2FStockholm&forecast_days=16";
+  let weather = null;      // { "2026-10-30T17:00": { t, rain, code } }
+  let weatherLoadedAt = 0;
+  async function loadWeather() {
+    weatherLoadedAt = Date.now();
+    try {
+      const res = await fetch(WEATHER_URL);
+      if (!res.ok) return;
+      const h = (await res.json()).hourly || {};
+      const codes = h.weather_code || h.weathercode || [];
+      const map = {};
+      (h.time || []).forEach((t, i) => {
+        map[t] = { t: h.temperature_2m[i], rain: (h.precipitation_probability || [])[i], code: codes[i] };
+      });
+      weather = map;
+      render();
+    } catch (e) { /* väder är en bonus – visa inget om det inte går */ }
+  }
+  const WMO = [
+    [[0], "☀️", "Klart"], [[1], "🌤️", "Mest klart"], [[2], "⛅", "Halvklart"], [[3], "☁️", "Mulet"],
+    [[45, 48], "🌫️", "Dimma"], [[51, 53, 55], "🌦️", "Duggregn"], [[56, 57], "🌧️", "Underkylt duggregn"],
+    [[61], "🌦️", "Lätt regn"], [[63], "🌧️", "Regn"], [[65], "🌧️", "Kraftigt regn"], [[66, 67], "🌧️", "Underkylt regn"],
+    [[71, 73, 75, 77], "🌨️", "Snö"], [[80, 81], "🌦️", "Regnskurar"], [[82], "⛈️", "Kraftiga skurar"],
+    [[85, 86], "🌨️", "Snöbyar"], [[95], "⛈️", "Åska"], [[96, 99], "⛈️", "Åska med hagel"]
+  ];
+  function weatherText(p) {
+    if (!weather) return "";
+    const start = new Date(p.starts_at).getTime();
+    if (start < Date.now() - 3600e3) return "";
+    const { date, time } = stockholmParts(p.starts_at);
+    const w = weather[date + "T" + time.slice(0, 2) + ":00"];
+    if (!w || w.t == null) return "";
+    const [, icon, label] = WMO.find(([codes]) => codes.includes(w.code)) || [null, "🌡️", ""];
+    let text = icon + " " + Math.round(w.t) + "°" + (label ? " " + label.toLowerCase() : "");
+    if (w.rain != null) text += " · " + w.rain + " % risk för regn";
+    let tip = "";
+    if (w.rain >= 60) tip = "ta med paraply ☂️";
+    else if (w.t >= 15 && (w.rain ?? 0) < 30 && w.code <= 2) tip = "uteservering?";
+    else if (w.t <= 0) tip = "glögg-väder 🧣";
+    return { text, tip };
+  }
+
+  // ---------- Slumpa bar ----------
+  // Ändra gärna listan! Ställen ni redan varit på kommer också med i slumpningen.
+  const BARS = [
+    "Pelikan, Södermalm", "Kvarnen, Södermalm", "Akkurat, Södermalm", "Oliver Twist, Södermalm",
+    "Mosebacke, Södermalm", "Snaps, Södermalm", "Morfar Ginko, Södermalm", "Gondolen, Slussen",
+    "Monks Porter House, Gamla stan", "Wirströms Pub, Gamla stan", "Tranan, Vasastan",
+    "Churchill Arms, Vasastan", "Sturehof, Östermalm", "Riche, Östermalm", "Sue Ellen",
+    "Mälarpaviljongen, Kungsholmen", "Trädgården, Skanstull", "Half Way Inn, Södermalm"
+  ];
+  async function randomBar() {
+    const btn = $("#random-bar"), input = $("#place");
+    if (btn.disabled) return;
+    const pool = Array.from(new Set(BARS.concat(proposals.filter((p) => !p.reveal_at).map((p) => p.place))));
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    btn.disabled = true;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      let delay = 50, i = Math.floor(Math.random() * pool.length);
+      const started = Date.now();
+      await new Promise((resolve) => {
+        const tick = () => {
+          input.value = pool[i++ % pool.length];
+          if (Date.now() - started > 1400) return resolve();
+          delay = Math.min(delay * 1.12, 220);
+          setTimeout(tick, delay);
+        };
+        tick();
+      });
+    }
+    input.value = pick;
+    input.removeAttribute("aria-invalid");
+    btn.disabled = false;
+    confetti(10);
+    showMsg($("#new-msg"), "🎲 Det blev " + pick + "! Välj dag och tid – eller slumpa igen.", "info");
   }
 
   // ---------- Nedräkning ----------
@@ -1627,6 +1732,10 @@
     refs.title = el("h3");
     refs.when = el("p", "when");
     refs.countdown = el("p", "countdown");
+    refs.weather = el("p", "weather");
+    refs.weatherText = el("span");
+    refs.weatherTip = el("span", "tip");
+    refs.weather.append(refs.weatherText, refs.weatherTip);
     refs.secretInfo = el("p", "secret-info");
     refs.secretText = el("span");
     refs.secretMine = el("span", "mine");
@@ -1807,7 +1916,7 @@
 
     refs.photoBlock = buildPhotoBlock(p.id);
 
-    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.secretInfo, refs.note, refs.by, ef.root,
+    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.weather, refs.secretInfo, refs.note, refs.by, ef.root,
       tally, choices, refs.msg, groupsWrap, buyer.root, refs.photoBlock.root, cwrap, actionsWrap, links);
     const card = { root, refs, busy: false };
     return card;
@@ -1827,6 +1936,10 @@
     refs.title.textContent = p.place;
     refs.when.textContent = formatWhen(p.starts_at);
     refs.countdown.textContent = countdownText(p);
+    const w = weatherText(p);
+    refs.weather.hidden = !w;
+    refs.weatherText.textContent = w ? w.text : "";
+    refs.weatherTip.textContent = w && w.tip ? " – " + w.tip : "";
 
     // Hemlig plats
     const secret = !!p.reveal_at;
@@ -2159,6 +2272,7 @@
 
       render();
       if (Date.now() - statsLoadedAt > 5 * 60 * 1000) loadStats();
+      if (Date.now() - weatherLoadedAt > 30 * 60 * 1000) loadWeather();
       updated.classList.remove("error");
       updated.textContent = "Uppdateras automatiskt · senast " +
         new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -2212,6 +2326,7 @@
   ["place", "date", "time", "note"].forEach((id) =>
     $("#" + id).addEventListener("input", (e) => e.target.removeAttribute("aria-invalid")));
   $("#new-form").addEventListener("submit", addProposal);
+  $("#random-bar").addEventListener("click", randomBar);
   $("#secret").addEventListener("change", () => {
     const on = $("#secret").checked;
     $("#secret-fields").hidden = !on;
