@@ -73,7 +73,7 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - **Nedräkning** på varje förslag ("om 2 dagar 4 tim", "Pågår nu!") och ölkonfetti när man
   svarar "Jag kommer".
 - **Väder** för AW-tiden (Open-Meteo, Stockholm, upp till 16 dagar fram; ingen nyckel behövs),
-  med tips som "uteservering?" eller "ta med paraply".
+  och en slumpad rolig kommentar (regn/kallt/snö/åska: "vi håller oss inne"-skämt, sol: uteservering).
 - **🎲 Slumpa** bredvid "Var?" slumpar en bar från listan `BARS` i `index.html` plus ställen ni
   redan föreslagit. Ändra listan fritt.
 - **Vem bjuder på första rundan?** slumpas (i databasen, `aw_draw_buyer`) bland dem som kommer,

@@ -329,7 +329,7 @@
 
   /* ---- Väder & slumpa bar ---- */
   .weather { margin: 4px 0 0; font-size: 15px; }
-  .weather .tip { color: var(--muted); }
+  .weather .tip { display: block; margin-top: 2px; color: var(--muted); font-style: italic; }
   .place-row { display: flex; gap: 8px; }
   .place-row input { flex: 1; }
   .random-bar {
@@ -1131,12 +1131,68 @@
     if (!w || w.t == null) return "";
     const [, icon, label] = WMO.find(([codes]) => codes.includes(w.code)) || [null, "🌡️", ""];
     let text = icon + " " + Math.round(w.t) + "°" + (label ? " " + label.toLowerCase() : "");
-    if (w.rain != null) text += " · " + w.rain + " % risk för regn";
-    let tip = "";
-    if (w.rain >= 60) tip = "ta med paraply ☂️";
-    else if (w.t >= 15 && (w.rain ?? 0) < 30 && w.code <= 2) tip = "uteservering?";
-    else if (w.t <= 0) tip = "glögg-väder 🧣";
-    return { text, tip };
+    const snowy = [71, 73, 75, 77, 85, 86].includes(w.code);
+    if (w.rain != null) text += " · " + w.rain + (snowy ? " % risk för snö" : " % risk för regn");
+    return { text, tip: weatherQuip(p, w) };
+  }
+
+  // Slumpade väderkommentarer – samma för ett förslag tills vädret byter kategori
+  const QUIPS = {
+    thunder: [
+      "Åska? Vi sitter inne och låtsas att det är ljudeffekter ⛈️",
+      "Blixt och dunder ute – lugn och öl inne 🍺",
+      "Perfekt kväll att hålla sig inne. Gudarna bowlar."
+    ],
+    snow: [
+      "Snö ute, mys inne ❄️🍺",
+      "Vinterland utanför, värmande drycker innanför",
+      "Ta med snöskyffeln, vi ses vid baren ⛄",
+      "Snöbollskrig efteråt? Nej. Vi stannar inne."
+    ],
+    rain: [
+      "Regn? Perfekt ursäkt att sitta inne vid baren 🍺",
+      "Vädret gråter, vi skålar 🥂",
+      "Blött ute, blött inne – fast inne är det öl 🍻",
+      "Paraplyet kan stanna hemma, vi ska ändå inte gå ut igen ☔",
+      "Inomhus-AW deluxe. Uteserveringen får vila.",
+      "Regnkläder valfritt, törst obligatorisk."
+    ],
+    cold: [
+      "Kallt ute, varmt i baren. Vi håller oss inne 🔥",
+      "Det enda som ska vara kallt i kväll är ölen 🍺",
+      "Mössa på vägen dit, mössa av vid baren 🧣",
+      "Termometern säger nej, törsten säger ja.",
+      "Perfekt väder för att sitta nära elementet 🛋️",
+      "Vi värmer oss inifrån. Inne. Med öl."
+    ],
+    sun: [
+      "Uteservering, någon? ☀️",
+      "Solglasögon på, kall öl i handen 😎",
+      "Först till uteserveringen vinner 🏃",
+      "Sommarkänsla! Någon får paxa bord i solen.",
+      "Väder för en lång kväll ute ☀️🍻"
+    ],
+    meh: [
+      "Helt okej AW-väder 👌",
+      "Grått ute? Vi gör det färgglatt inne 🍻",
+      "Varken sol eller regn – perfekt läge för en bärs.",
+      "Godkänt väder. Ölen avgör resten.",
+      "Inget väder att klaga på, bara att dyka upp.",
+      "Svenskt mellanväder. Inne är alltid rätt."
+    ]
+  };
+  function weatherQuip(p, w) {
+    const c = w.code;
+    let cat = "meh";
+    if (c >= 95) cat = "thunder";
+    else if ([71, 73, 75, 77, 85, 86].includes(c)) cat = "snow";
+    else if ((w.rain ?? 0) >= 50 || [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(c)) cat = "rain";
+    else if (w.t <= 5) cat = "cold";
+    else if (w.t >= 15 && c <= 2) cat = "sun";
+    const list = QUIPS[cat];
+    let h = 0;
+    for (const ch of p.id + cat) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return list[h % list.length];
   }
 
   // ---------- Slumpa bar ----------
@@ -1939,7 +1995,7 @@
     const w = weatherText(p);
     refs.weather.hidden = !w;
     refs.weatherText.textContent = w ? w.text : "";
-    refs.weatherTip.textContent = w && w.tip ? " – " + w.tip : "";
+    refs.weatherTip.textContent = w && w.tip ? w.tip : "";
 
     // Hemlig plats
     const secret = !!p.reveal_at;
