@@ -79,6 +79,8 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   plus ställen ni redan föreslagit. Ändra listan fritt.
 - **Pris på en stor stark** sparas per ställe (`aw_place_price`, via `aw_set_price`) och visas på alla
   förslag på samma ställe och som tips i formuläret. Vem som helst kan lägga in eller ändra priset.
+  [`startpriser.sql`](startpriser.sql) lägger in ungefärliga startpriser från vadkostarolen.se
+  (skriver inte över befintliga priser).
 - **Vem bjuder på första rundan?** slumpas (i databasen, `aw_draw_buyer`) bland dem som kommer,
   när minst två har svarat ja. Alla ser samma namn. Kommer nya personer efter slumpningen kan vem
   som helst slumpa om (bland alla som kommer); annars kan bara admin slumpa om.
