@@ -47,11 +47,16 @@ alter table public.rsvp        enable row level security;
 drop policy if exists "alla kan läsa förslag"          on public.aw_proposal;
 drop policy if exists "alla kan föreslå"               on public.aw_proposal;
 drop policy if exists "ta bort förslag med rätt token" on public.aw_proposal;
+drop policy if exists "ändra förslag med rätt token"   on public.aw_proposal;
 
 create policy "alla kan läsa förslag" on public.aw_proposal
   for select to anon using (true);
 create policy "alla kan föreslå" on public.aw_proposal
   for insert to anon with check (true);
+create policy "ändra förslag med rätt token" on public.aw_proposal
+  for update to anon
+  using (token = public.rsvp_request_token())
+  with check (token = public.rsvp_request_token());
 create policy "ta bort förslag med rätt token" on public.aw_proposal
   for delete to anon using (token = public.rsvp_request_token());
 
@@ -78,6 +83,7 @@ create policy "ta bort med rätt token" on public.rsvp
 revoke all on public.aw_proposal from anon, authenticated;
 grant select (id, place, starts_at, note, created_by, created_at) on public.aw_proposal to anon;
 grant insert (place, starts_at, note, created_by, token)         on public.aw_proposal to anon;
+grant update (place, starts_at, note)                            on public.aw_proposal to anon;
 grant delete                                                     on public.aw_proposal to anon;
 
 revoke all on public.rsvp from anon, authenticated;
@@ -176,6 +182,24 @@ begin
 end
 $$;
 
+create or replace function public.admin_update_proposal(
+  p_id uuid, p_place text, p_starts_at timestamptz, p_note text, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  update public.aw_proposal
+     set place = p_place, starts_at = p_starts_at, note = nullif(btrim(coalesce(p_note, '')), '')
+   where id = p_id;
+  return found;
+end
+$$;
+
 create or replace function public.admin_delete_comment(p_id uuid, p_code text)
 returns boolean
 language plpgsql
@@ -193,6 +217,8 @@ $$;
 
 revoke all on function public.admin_check(text)                 from public, anon, authenticated;
 revoke all on function public.admin_delete_comment(uuid, text)  from public, anon, authenticated;
+revoke all on function public.admin_update_proposal(uuid, text, timestamptz, text, text) from public, anon, authenticated;
+grant execute on function public.admin_update_proposal(uuid, text, timestamptz, text, text) to anon;
 grant execute on function public.admin_delete_comment(uuid, text)  to anon;
 revoke all on function public.admin_delete_proposal(uuid, text) from public, anon, authenticated;
 grant execute on function public.admin_check(text)                 to anon;

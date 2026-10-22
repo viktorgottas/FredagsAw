@@ -139,10 +139,11 @@
 
   /* ---- Formulär ---- */
   .field + .field { margin-top: 14px; }
+  .row > .field + .field { margin-top: 0; }
   .field label { display: block; font-weight: 700; margin-bottom: 6px; }
   .field .opt { font-weight: 400; color: var(--muted); }
   .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-  input[type="text"], input[type="date"], input[type="time"] {
+  input[type="text"], input[type="email"], input[type="date"], input[type="time"] {
     display: block;
     width: 100%;
     min-width: 0;
@@ -222,7 +223,33 @@
   .comment-body { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .comment .linkish { padding: 0 2px; font-size: 13px; }
   .comment-form { display: flex; gap: 8px; margin-top: 10px; }
-  .comment-form input[type="text"] { flex: 1; min-height: 44px; font-size: 16px; padding: 8px 12px; }
+  .comment-form input[type="text"], .comment-form input[type="email"] { flex: 1; min-height: 44px; font-size: 16px; padding: 8px 12px; }
+  .edit-form {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .edit-form input[type="text"], .edit-form input[type="date"], .edit-form input[type="time"] { background: var(--surface); }
+  .edit-buttons { display: flex; gap: 10px; margin-top: 14px; }
+  .edit-buttons .primary { margin-top: 0; min-height: 48px; font-size: 17px; }
+  .secondary {
+    flex: none;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .secondary:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .card .lead { margin: -6px 0 12px; color: var(--muted); font-size: 15px; }
   .comment-form button {
     flex: none;
     min-height: 44px;
@@ -424,6 +451,7 @@
   </header>
 
   <div class="wrap">
+    <p id="top-msg" class="msg" role="status" aria-live="polite"></p>
     <div id="config-notice" class="notice" hidden>
       Sidan är inte kopplad till någon databas än. Fyll i SUPABASE_URL och
       SUPABASE_ANON_KEY överst i skriptet i index.html.
@@ -470,6 +498,17 @@
         <button id="new-submit" class="primary" type="submit">Lägg till förslag</button>
       </form>
       <p id="new-msg" class="msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card" aria-labelledby="sub-heading">
+      <h2 id="sub-heading">Få mejl om nya AW:er</h2>
+      <p class="lead">Ett mejl när en ny AW föreslås eller när tid eller plats ändras. Inget annat.</p>
+      <form id="sub-form" class="comment-form" novalidate>
+        <input id="sub-email" type="email" maxlength="254" autocomplete="email" inputmode="email"
+               placeholder="din@mejl.se" aria-label="Din e-postadress">
+        <button id="sub-submit" type="submit">Prenumerera</button>
+      </form>
+      <p id="sub-msg" class="msg" role="status" aria-live="polite"></p>
     </section>
 
     <figure class="poster-wrap">
@@ -626,6 +665,7 @@
     if (c === "23514") return verb + ": kontrollera att alla fält är rätt ifyllda.";
     if (c === "23505") return verb + ": du har redan svarat på det här förslaget. Ladda om sidan.";
     if (c === "23503") return verb + ": förslaget finns inte längre.";
+    if (c === "PGRST202") return verb + ": funktionen saknas i databasen. Kör SQL-filerna i Supabase igen.";
     if (c === "42P01" || c === "42703" || c === "PGRST204" || c === "PGRST205" || s === 404)
       return verb + ": databasen behöver uppdateras. Kör supabase.sql i Supabase igen.";
     if (c === "42501" || s === 401 || s === 403)
@@ -823,32 +863,102 @@
     card.refs.buttons.forEach((b) => { b.disabled = on; });
     card.refs.removeRsvp.disabled = on;
     card.refs.removeProposal.disabled = on;
+    card.refs.editBtn.disabled = on;
+    card.refs.edit.root.querySelectorAll("button, input").forEach((x) => { x.disabled = on; });
   }
 
   // ---------- Nytt förslag ----------
+  // Läser och validerar ställe/dag/tid/info. Returnerar null (och visar fel) om något är fel.
+  function readProposalFields(f, msgNode) {
+    [f.place, f.date, f.time, f.note].forEach((i) => i.removeAttribute("aria-invalid"));
+    const place = f.place.value.trim().replace(/\s+/g, " ");
+    const note = f.note.value.trim().replace(/\s+/g, " ");
+    const fail = (input, text) => { input.setAttribute("aria-invalid", "true"); input.focus(); showMsg(msgNode, text, "error"); return null; };
+    if (!place) return fail(f.place, "Skriv var ni ska ses.");
+    if (place.length > 60) return fail(f.place, "Stället får vara max 60 tecken.");
+    if (!f.date.value) return fail(f.date, "Välj en dag.");
+    if (!f.time.value) return fail(f.time, "Välj en tid.");
+    const starts = stockholmTime(f.date.value, f.time.value);
+    if (isNaN(starts)) return fail(f.date, "Ogiltigt datum eller tid.");
+    if (starts.getTime() < Date.now()) return fail(f.date, "Tiden har redan passerat. Välj en senare tid.");
+    if (note.length > 140) return fail(f.note, "Mer info får vara max 140 tecken.");
+    return { place, starts, note };
+  }
+
+  function stockholmParts(iso) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
+    }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+    return { date: parts.year + "-" + parts.month + "-" + parts.day, time: parts.hour + ":" + parts.minute };
+  }
+
+  function openEdit(card, p) {
+    const f = card.refs.edit;
+    const { date, time } = stockholmParts(p.starts_at);
+    f.place.value = p.place;
+    f.date.value = date;
+    f.time.value = time;
+    f.note.value = p.note || "";
+    f.root.hidden = false;
+    card.refs.editBtn.hidden = true;
+    card.refs.msg.textContent = "";
+    f.place.focus();
+  }
+  function closeEdit(card) {
+    card.refs.edit.root.hidden = true;
+    card.refs.editBtn.hidden = !(adminCode || me.proposals.includes(card.root.dataset.id));
+  }
+
+  async function saveEdit(card, p) {
+    if (card.busy) return;
+    const v = readProposalFields(card.refs.edit, card.refs.msg);
+    if (!v) return;
+    const movedOrRenamed = v.place !== p.place || v.starts.getTime() !== new Date(p.starts_at).getTime();
+    setCardBusy(card, true);
+    showMsg(card.refs.msg, "Sparar ändringen …", "info");
+    try {
+      let ok;
+      if (adminCode) {
+        ok = await api("rpc/admin_update_proposal", { method: "POST", body: {
+          p_id: p.id, p_place: v.place, p_starts_at: v.starts.toISOString(), p_note: v.note, p_code: adminCode } });
+      } else {
+        const rows = await api("aw_proposal?id=eq." + encodeURIComponent(p.id) + "&select=id", {
+          method: "PATCH", body: { place: v.place, starts_at: v.starts.toISOString(), note: v.note || null },
+          withToken: true, prefer: "return=representation"
+        });
+        ok = !!(rows && rows.length);
+      }
+      if (!ok) {
+        showMsg(card.refs.msg, "Bara den som lade förslaget (från samma webbläsare) kan ändra det.", "error");
+        return;
+      }
+      proposals = proposals.map((x) => x.id === p.id
+        ? { ...x, place: v.place, starts_at: v.starts.toISOString(), note: v.note || null } : x);
+      closeEdit(card);
+      render();
+      showMsg(card.refs.msg, movedOrRenamed
+        ? "Förslaget är ändrat. De som prenumererar får ett mejl om ny tid/plats."
+        : "Förslaget är ändrat.", "ok");
+    } catch (e) {
+      showMsg(card.refs.msg, errorText("Kunde inte spara ändringen", e), "error");
+    } finally {
+      setCardBusy(card, false);
+      refresh();
+    }
+  }
+
   async function addProposal(ev) {
     ev.preventDefault();
     const msgNode = $("#new-msg");
     const submit = $("#new-submit");
     if (submit.disabled) return;
 
-    const placeIn = $("#place"), dateIn = $("#date"), timeIn = $("#time"), noteIn = $("#note");
-    [placeIn, dateIn, timeIn].forEach((i) => i.removeAttribute("aria-invalid"));
-
+    const placeIn = $("#place"), noteIn = $("#note");
     const name = requireName(msgNode);
     if (!name) return;
-    const place = placeIn.value.trim().replace(/\s+/g, " ");
-    const note = noteIn.value.trim().replace(/\s+/g, " ");
-    const fail = (input, text) => { input.setAttribute("aria-invalid", "true"); input.focus(); showMsg(msgNode, text, "error"); };
-
-    if (!place) return fail(placeIn, "Skriv var ni ska ses.");
-    if (place.length > 60) return fail(placeIn, "Stället får vara max 60 tecken.");
-    if (!dateIn.value) return fail(dateIn, "Välj en dag.");
-    if (!timeIn.value) return fail(timeIn, "Välj en tid.");
-    const starts = stockholmTime(dateIn.value, timeIn.value);
-    if (isNaN(starts)) return fail(dateIn, "Ogiltigt datum eller tid.");
-    if (starts.getTime() < Date.now()) return fail(dateIn, "Tiden har redan passerat. Välj en senare tid.");
-    if (note.length > 140) return fail(noteIn, "Mer info får vara max 140 tecken.");
+    const v = readProposalFields({ place: placeIn, date: $("#date"), time: $("#time"), note: noteIn }, msgNode);
+    if (!v) return;
+    const { place, starts, note } = v;
 
     submit.disabled = true;
     busy++;
@@ -906,6 +1016,38 @@
     refs.note = el("p", "note");
     refs.by = el("p", "by");
 
+    // Ändra-formulär (dolt tills man trycker "Ändra")
+    const ef = { root: el("form", "edit-form") };
+    ef.root.hidden = true;
+    ef.root.noValidate = true;
+    const field = (label, input) => {
+      const wrap = el("div", "field");
+      const id = "edit-" + p.id + "-" + label.toLowerCase().replace(/[^a-zåäö]/g, "");
+      input.id = id;
+      const l = el("label", null, label);
+      l.htmlFor = id;
+      wrap.append(l, input);
+      return wrap;
+    };
+    const input = (type, max) => { const i = el("input"); i.type = type; if (max) i.maxLength = max; return i; };
+    ef.place = input("text", 60);
+    ef.date = input("date");
+    ef.time = input("time");
+    ef.time.step = 900;
+    ef.note = input("text", 140);
+    const row = el("div", "field row");
+    row.append(field("Dag", ef.date), field("Tid", ef.time));
+    const btns = el("div", "edit-buttons");
+    const save = el("button", "primary", "Spara");
+    save.type = "submit";
+    const cancel = el("button", "secondary", "Avbryt");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => { closeEdit(card); card.refs.msg.textContent = ""; });
+    btns.append(save, cancel);
+    ef.root.append(field("Var?", ef.place), row, field("Mer info", ef.note), btns);
+    ef.root.addEventListener("submit", (ev) => { ev.preventDefault(); saveEdit(card, currentProposal(p.id)); });
+    refs.edit = ef;
+
     const tally = el("div", "tally");
     refs.count = el("span", "big", "0");
     tally.append(refs.count, el("span", "big-label", "kommer"));
@@ -947,7 +1089,10 @@
     refs.removeProposal = el("button", "linkish", "Ta bort förslaget");
     refs.removeProposal.type = "button";
     refs.removeProposal.addEventListener("click", () => removeProposal(currentProposal(p.id), card));
-    links.append(refs.removeRsvp, refs.removeProposal);
+    refs.editBtn = el("button", "linkish", "Ändra tid/plats");
+    refs.editBtn.type = "button";
+    refs.editBtn.addEventListener("click", () => openEdit(card, currentProposal(p.id)));
+    links.append(refs.removeRsvp, refs.editBtn, refs.removeProposal);
 
     const actions = el("div", "actions");
     const share = el("button", "action");
@@ -983,7 +1128,7 @@
     refs.commentMsg.setAttribute("aria-live", "polite");
     cwrap.append(refs.commentHeading, refs.commentList, cform, refs.commentMsg);
 
-    root.append(badges, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, cwrap, actions, links);
+    root.append(badges, refs.title, refs.when, refs.note, refs.by, ef.root, tally, choices, refs.msg, groupsWrap, cwrap, actions, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -1040,7 +1185,10 @@
     });
 
     refs.removeRsvp.hidden = !mine;
-    refs.removeProposal.hidden = !(adminCode || me.proposals.includes(p.id));
+    const canManage = !!adminCode || me.proposals.includes(p.id);
+    refs.removeProposal.hidden = !canManage;
+    refs.editBtn.hidden = !canManage || !refs.edit.root.hidden;
+    if (!canManage) refs.edit.root.hidden = true;
     renderComments(card, p);
   }
 
@@ -1355,6 +1503,57 @@
   window.addEventListener("hashchange", () => { if (location.hash === "#admin") checkAdmin(); });
   $("#admin-login").addEventListener("click", () => checkAdmin(true));
 
+  // ---------- Mejlprenumeration ----------
+  async function subscribe(ev) {
+    ev.preventDefault();
+    const input = $("#sub-email"), btn = $("#sub-submit"), msgNode = $("#sub-msg");
+    if (btn.disabled) return;
+    const email = input.value.trim();
+    input.removeAttribute("aria-invalid");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) {
+      input.setAttribute("aria-invalid", "true");
+      input.focus();
+      showMsg(msgNode, "Skriv en giltig e-postadress.", "error");
+      return;
+    }
+    btn.disabled = true;
+    showMsg(msgNode, "Sparar …", "info");
+    try {
+      const res = await api("rpc/aw_subscribe", { method: "POST", body: { p_email: email } });
+      input.value = "";
+      showMsg(msgNode, res === "redan"
+        ? "Den adressen prenumererar redan. 👍"
+        : "Klart! Du får ett mejl när en ny AW föreslås eller tid/plats ändras. Varje mejl har en avregistreringslänk.", "ok");
+    } catch (e) {
+      if (e instanceof ApiError && e.detail.code === "22023") showMsg(msgNode, "Skriv en giltig e-postadress.", "error");
+      else if (e instanceof ApiError && (e.detail.code === "PGRST202" || e.status === 404))
+        showMsg(msgNode, "Mejlprenumeration är inte aktiverad än.", "error");
+      else showMsg(msgNode, errorText("Kunde inte spara", e), "error");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  $("#sub-form").addEventListener("submit", subscribe);
+
+  async function handleUnsubscribe() {
+    const params = new URLSearchParams(location.search);
+    const token = params.get("avregistrera");
+    if (!token) return;
+    params.delete("avregistrera");
+    const qs = params.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
+    const msgNode = $("#top-msg");
+    showMsg(msgNode, "Avregistrerar …", "info");
+    try {
+      const ok = await api("rpc/aw_unsubscribe", { method: "POST", body: { p_token: token } });
+      showMsg(msgNode, ok ? "Du är avregistrerad och får inga fler mejl från AW-appen."
+                          : "Du var redan avregistrerad.", ok ? "ok" : "info");
+    } catch (e) {
+      showMsg(msgNode, e instanceof ApiError && e.detail.code === "22P02"
+        ? "Avregistreringslänken är ogiltig." : errorText("Kunde inte avregistrera", e), "error");
+    }
+  }
+
   async function cleanupPast() {
     try { await api("rpc/cleanup_past_proposals", { method: "POST", body: {}, prefer: "return=minimal" }); }
     catch (e) { /* funktionen saknas (gammal SQL) eller nätfel – inget att visa */ }
@@ -1367,6 +1566,7 @@
     $("#admin-bar").hidden = !adminCode;
     $("#admin-login-bar").hidden = !!adminCode;
     checkAdmin();
+    handleUnsubscribe();
     cleanupPast().then(refresh);
     refresh();
     setInterval(() => { if (!document.hidden && !busy) refresh(); }, REFRESH_MS);

@@ -18,7 +18,7 @@ SQL:en skapar tabellerna `aw_proposal` (förslag: ställe, tid, kommentar, vem) 
 (svar per förslag) och slår på Row Level Security:
 
 - alla får **läsa** och **lägga till** förslag och svar,
-- **ändra/ta bort** sitt svar, eller **ta bort** sitt förslag, går bara om headern
+- **ändra/ta bort** sitt svar, eller **ändra/ta bort** sitt förslag, går bara om headern
   `x-rsvp-token` matchar radens token (tas ett förslag bort försvinner svaren med),
 - kolumnen `token` går **inte** att läsa via API:t, så ingen kan sno någon annans token.
 
@@ -84,24 +84,35 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 
 Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
 
-## E-postnotiser (valfritt)
+## E-postnotiser och prenumeration (valfritt)
 
-Ett mejl när någon lägger ett förslag eller skriver en kommentar, via [Resend](https://resend.com)
-(gratis upp till 100 mejl/dag).
+- **Du** (`notify_email`) får mejl om nya förslag, ändrad tid/plats och nya kommentarer.
+- **Alla andra** kan skriva in sin mejl under "Få mejl om nya AW:er" och får då bara mejl om
+  nya förslag och ändrad tid/plats. Varje mejl har en avregistreringslänk (`?avregistrera=…`).
 
-1. Skapa ett konto på resend.com → **API Keys** → **Create API Key** (Sending access) → kopiera `re_…`.
-2. Kör [`epost-notiser.sql`](epost-notiser.sql) i SQL Editor.
-3. Kör (med dina värden; mejladressen måste vara den du skapade Resend-kontot med):
+Mejltjänst – välj en:
+
+- **Brevo** (gratis 300 mejl/dag) – kan mejla vem som helst utan egen domän. Verifiera din
+  avsändaradress under *Senders, Domains & Dedicated IPs → Senders* och skapa en API-nyckel under
+  *SMTP & API → API Keys*.
+- **Resend** – utan egen domän går mejl bara till kontots egen adress, så prenumeranter kräver en
+  verifierad domän.
+
+1. Kör [`epost-notiser.sql`](epost-notiser.sql) i SQL Editor (går att köra flera gånger).
+2. Kör med dina värden:
 
    ```sql
    insert into public.aw_settings (key, value) values
-     ('resend_api_key', 're_DIN_NYCKEL'),
-     ('notify_email',   'din@mejl.se'),
-     ('site_url',       'https://<användarnamn>.github.io/<repo>/')
+     ('mail_provider', 'brevo'),
+     ('brevo_api_key', 'xkeysib-...'),
+     ('sender_email',  'din@mejl.se'),
+     ('notify_email',  'din@mejl.se'),
+     ('site_url',      'https://<användarnamn>.github.io/<repo>/')
    on conflict (key) do update set value = excluded.value;
    ```
 
-Stänga av: `delete from public.aw_settings where key = 'resend_api_key';`
+Se prenumeranter: `select email, created_at from public.aw_subscriber;`
+Stänga av alla mejl: `delete from public.aw_settings where key in ('brevo_api_key', 'resend_api_key');`
 
 ## Rensa efteråt
 
