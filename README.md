@@ -62,11 +62,13 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   ditt förra besök märks **Nytt**.
 - Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
   (.ics-fil) och **Hitta hit** (Google Maps). Delade länkar går direkt till förslaget.
+- Under varje förslag finns **kommentarer** (max 280 tecken). Man kan ta bort sina egna;
+  admin kan ta bort alla.
 - Sidan kan läggas på hemskärmen som en app (Safari: Dela → Lägg till på hemskärmen).
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
-## Admin: ta bort vilket förslag som helst
+## Admin: ta bort vilket förslag eller vilken kommentar som helst
 
 1. Lägg in en admin-kod i Supabase (SQL Editor, byt `HEMLIG-KOD` mot din egen):
 
@@ -83,5 +85,5 @@ Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
 
 ## Rensa efteråt
 
-Ta bort allt: kör `delete from public.aw_proposal; delete from public.rsvp;` i SQL Editor.
+Ta bort allt: kör `delete from public.aw_proposal; delete from public.rsvp;` i SQL Editor (kommentarer följer med förslagen).
 Ta bort enskilda rader (t.ex. skräp): **Table Editor → aw_proposal / rsvp**, markera raden → Delete.

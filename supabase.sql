@@ -86,6 +86,35 @@ grant insert (proposal_id, name, status, token)          on public.rsvp to anon;
 grant update (name, status)                              on public.rsvp to anon;
 grant delete                                             on public.rsvp to anon;
 
+-- ---------- Kommentarer ----------
+create table if not exists public.aw_comment (
+  id          uuid        primary key default gen_random_uuid(),
+  proposal_id uuid        not null references public.aw_proposal (id) on delete cascade,
+  name        text        not null check (char_length(btrim(name)) between 1 and 40),
+  body        text        not null check (char_length(btrim(body)) between 1 and 280),
+  token       text        not null check (char_length(token) between 20 and 100),
+  created_at  timestamptz not null default now()
+);
+create index if not exists aw_comment_proposal on public.aw_comment (proposal_id, created_at);
+
+alter table public.aw_comment enable row level security;
+
+drop policy if exists "alla kan läsa kommentarer"          on public.aw_comment;
+drop policy if exists "alla kan kommentera"                on public.aw_comment;
+drop policy if exists "ta bort kommentar med rätt token"   on public.aw_comment;
+
+create policy "alla kan läsa kommentarer" on public.aw_comment
+  for select to anon using (true);
+create policy "alla kan kommentera" on public.aw_comment
+  for insert to anon with check (true);
+create policy "ta bort kommentar med rätt token" on public.aw_comment
+  for delete to anon using (token = public.rsvp_request_token());
+
+revoke all on public.aw_comment from anon, authenticated;
+grant select (id, proposal_id, name, body, created_at) on public.aw_comment to anon;
+grant insert (proposal_id, name, body, token)          on public.aw_comment to anon;
+grant delete                                           on public.aw_comment to anon;
+
 -- ---------- Städning ----------
 -- Tar bort förslag vars dag (svensk tid) har passerat; svaren följer med.
 -- Sidan anropar den när någon öppnar den. Den kan bara radera passerade förslag.
@@ -147,7 +176,24 @@ begin
 end
 $$;
 
+create or replace function public.admin_delete_comment(p_id uuid, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  delete from public.aw_comment where id = p_id;
+  return found;
+end
+$$;
+
 revoke all on function public.admin_check(text)                 from public, anon, authenticated;
+revoke all on function public.admin_delete_comment(uuid, text)  from public, anon, authenticated;
+grant execute on function public.admin_delete_comment(uuid, text)  to anon;
 revoke all on function public.admin_delete_proposal(uuid, text) from public, anon, authenticated;
 grant execute on function public.admin_check(text)                 to anon;
 grant execute on function public.admin_delete_proposal(uuid, text) to anon;

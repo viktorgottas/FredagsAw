@@ -203,6 +203,42 @@
   .proposal.flash { animation: flash 1.6s ease-out 1; }
   @keyframes flash { 0%, 30% { box-shadow: 0 0 0 4px var(--brass), var(--shadow); } 100% { box-shadow: var(--shadow); } }
 
+  .comments { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .comments h4 {
+    margin: 0 0 8px;
+    font: 600 15px/1.3 Oswald, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .comment-list { list-style: none; margin: 0; padding: 0; }
+  .comment { padding: 8px 0; }
+  .comment + .comment { border-top: 1px dashed var(--line); }
+  .comment-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .comment-name { font-weight: 700; overflow-wrap: anywhere; }
+  .comment.mine .comment-name { color: var(--brass); }
+  .comment-time { font-size: 13px; color: var(--muted); }
+  .comment-body { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .comment .linkish { padding: 0 2px; font-size: 13px; }
+  .comment-form { display: flex; gap: 8px; margin-top: 10px; }
+  .comment-form input[type="text"] { flex: 1; min-height: 44px; font-size: 16px; padding: 8px 12px; }
+  .comment-form button {
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--green);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .comment-form button:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .comment-form button[disabled] { opacity: .7; cursor: progress; }
+
   .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .action {
     display: inline-flex;
@@ -428,7 +464,7 @@
           </div>
         </div>
         <div class="field">
-          <label for="note">Kommentar <span class="opt">(valfritt)</span></label>
+          <label for="note">Mer info <span class="opt">(valfritt)</span></label>
           <input id="note" type="text" maxlength="140" placeholder="T.ex. vi sitter i bakre rummet">
         </div>
         <button id="new-submit" class="primary" type="submit">Lägg till förslag</button>
@@ -504,6 +540,7 @@
     }
     m.rsvps = m.rsvps && typeof m.rsvps === "object" ? m.rsvps : {};
     m.proposals = Array.isArray(m.proposals) ? m.proposals : [];
+    m.comments = Array.isArray(m.comments) ? m.comments : [];
     return m;
   }
 
@@ -512,6 +549,8 @@
 
   let proposals = [];
   let rsvps = [];
+  let comments = [];
+  let commentsAvailable = true;
   let busy = 0;
   let listSeq = 0;
   const cards = new Map(); // proposalId -> { root, refs }
@@ -800,7 +839,7 @@
     const starts = stockholmTime(dateIn.value, timeIn.value);
     if (isNaN(starts)) return fail(dateIn, "Ogiltigt datum eller tid.");
     if (starts.getTime() < Date.now()) return fail(dateIn, "Tiden har redan passerat. Välj en senare tid.");
-    if (note.length > 140) return fail(noteIn, "Kommentaren får vara max 140 tecken.");
+    if (note.length > 140) return fail(noteIn, "Mer info får vara max 140 tecken.");
 
     submit.disabled = true;
     busy++;
@@ -915,7 +954,27 @@
     refs.map.rel = "noopener";
     actions.append(share, refs.cal, refs.map);
 
-    root.append(badges, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, actions, links);
+    const cwrap = el("section", "comments");
+    refs.commentHeading = el("h4", null, "Kommentarer");
+    refs.commentList = el("ul", "comment-list");
+    const cform = el("form", "comment-form");
+    cform.noValidate = true;
+    refs.commentInput = el("input");
+    refs.commentInput.type = "text";
+    refs.commentInput.maxLength = 280;
+    refs.commentInput.placeholder = "Skriv en kommentar …";
+    refs.commentInput.setAttribute("aria-label", "Kommentar");
+    refs.commentInput.enterKeyHint = "send";
+    refs.commentSend = el("button", null, "Skicka");
+    refs.commentSend.type = "submit";
+    cform.append(refs.commentInput, refs.commentSend);
+    cform.addEventListener("submit", (ev) => { ev.preventDefault(); addComment(currentProposal(p.id), card); });
+    refs.commentMsg = el("p", "msg");
+    refs.commentMsg.setAttribute("role", "status");
+    refs.commentMsg.setAttribute("aria-live", "polite");
+    cwrap.append(refs.commentHeading, refs.commentList, cform, refs.commentMsg);
+
+    root.append(badges, refs.title, refs.when, refs.note, refs.by, tally, choices, refs.msg, groupsWrap, cwrap, actions, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -973,6 +1032,113 @@
 
     refs.removeRsvp.hidden = !mine;
     refs.removeProposal.hidden = !(adminCode || me.proposals.includes(p.id));
+    renderComments(card, p);
+  }
+
+  function formatCommentTime(iso) {
+    const d = new Date(iso);
+    const time = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(d).replace(":", ".");
+    const today = dayKey(new Date());
+    const yesterday = dayKey(new Date(Date.now() - 864e5));
+    const k = dayKey(d);
+    if (k === today) return "i dag " + time;
+    if (k === yesterday) return "i går " + time;
+    return new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", timeZone: TZ }).format(d) + " " + time;
+  }
+
+  function renderComments(card, p) {
+    const { refs } = card;
+    const list = comments.filter((c) => c.proposal_id === p.id);
+    refs.commentHeading.textContent = list.length ? "Kommentarer (" + list.length + ")" : "Kommentarer";
+    refs.commentList.replaceChildren();
+    list.forEach((c) => {
+      const mine = me.comments.includes(c.id);
+      const li = el("li", "comment" + (mine ? " mine" : ""));
+      const head = el("div", "comment-head");
+      head.append(el("span", "comment-name", c.name), el("span", "comment-time", formatCommentTime(c.created_at)));
+      if (mine || adminCode) {
+        const del = el("button", "linkish", "Ta bort");
+        del.type = "button";
+        del.setAttribute("aria-label", "Ta bort kommentaren från " + c.name);
+        del.addEventListener("click", () => removeComment(c, card));
+        head.append(del);
+      }
+      li.append(head, el("p", "comment-body", c.body));
+      refs.commentList.append(li);
+    });
+    if (!commentsAvailable) {
+      refs.commentInput.disabled = refs.commentSend.disabled = true;
+      refs.commentInput.placeholder = "Kommentarer är inte aktiverade än";
+    } else if (!card.commentBusy) {
+      refs.commentInput.disabled = refs.commentSend.disabled = false;
+      refs.commentInput.placeholder = "Skriv en kommentar …";
+    }
+  }
+
+  async function addComment(p, card) {
+    const { refs } = card;
+    if (card.commentBusy || !commentsAvailable) return;
+    const name = requireName(refs.commentMsg);
+    if (!name) return;
+    const body = refs.commentInput.value.trim();
+    if (!body) { showMsg(refs.commentMsg, "Skriv något först.", "error"); refs.commentInput.focus(); return; }
+    if (body.length > 280) { showMsg(refs.commentMsg, "Max 280 tecken.", "error"); return; }
+
+    card.commentBusy = true;
+    busy++;
+    refs.commentInput.disabled = refs.commentSend.disabled = true;
+    refs.commentMsg.textContent = "";
+    try {
+      const rows = await api("aw_comment?select=id,proposal_id,name,body,created_at", {
+        method: "POST", body: { proposal_id: p.id, name, body, token: me.token }, prefer: "return=representation"
+      });
+      const c = rows && rows[0];
+      if (!c) throw new Error("oväntat svar");
+      me.comments.push(c.id);
+      saveMe();
+      comments = comments.concat([c]);
+      refs.commentInput.value = "";
+    } catch (e) {
+      showMsg(refs.commentMsg, errorText("Kunde inte skicka kommentaren", e), "error");
+    } finally {
+      card.commentBusy = false;
+      busy--;
+      refs.commentInput.disabled = refs.commentSend.disabled = false;
+      renderComments(card, p);
+      refs.commentInput.focus({ preventScroll: true });
+      refresh();
+    }
+  }
+
+  async function removeComment(c, card) {
+    if (card.commentBusy) return;
+    if (!confirm("Ta bort kommentaren?")) return;
+    card.commentBusy = true;
+    busy++;
+    try {
+      let removed;
+      if (me.comments.includes(c.id)) {
+        const rows = await api("aw_comment?id=eq." + encodeURIComponent(c.id) + "&select=id", {
+          method: "DELETE", withToken: true, prefer: "return=representation"
+        });
+        removed = !!(rows && rows.length);
+      }
+      if (!removed && adminCode) {
+        removed = await api("rpc/admin_delete_comment", { method: "POST", body: { p_id: c.id, p_code: adminCode } });
+      }
+      if (!removed) throw new Error("ej borttagen");
+      me.comments = me.comments.filter((id) => id !== c.id);
+      saveMe();
+      comments = comments.filter((x) => x.id !== c.id);
+      card.refs.commentMsg.textContent = "";
+    } catch (e) {
+      showMsg(card.refs.commentMsg, errorText("Kunde inte ta bort kommentaren", e), "error");
+    } finally {
+      card.commentBusy = false;
+      busy--;
+      renderComments(card, currentProposal(c.proposal_id));
+      refresh();
+    }
   }
 
   function render() {
@@ -1046,14 +1212,22 @@
     const seq = ++listSeq;
     const updated = $("#updated");
     try {
-      const [ps, rs] = await Promise.all([
+      const [ps, rs, cs] = await Promise.all([
         api("aw_proposal?select=id,place,starts_at,note,created_by,created_at&order=starts_at.asc"),
-        api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc")
+        api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc"),
+        // Kommentarer får inte sänka hela sidan om tabellen saknas (gammal SQL)
+        api("aw_comment?select=id,proposal_id,name,body,created_at&order=created_at.asc").catch((e) => e)
       ]);
       if (seq !== listSeq) return; // ett nyare anrop har startat
       const known = new Set(proposals.map((p) => p.id));
       proposals = ps || [];
       rsvps = rs || [];
+      if (cs instanceof Error) {
+        commentsAvailable = !(cs instanceof ApiError && (cs.status === 404 || ["42P01", "PGRST205"].includes(cs.detail.code)));
+      } else {
+        commentsAvailable = true;
+        comments = cs || [];
+      }
       trackNew(known);
 
       if (!busy) {
@@ -1063,6 +1237,11 @@
         let changed = false;
         for (const pid of Object.keys(me.rsvps)) {
           if (!pIds.has(pid) || !rIds.has(me.rsvps[pid])) { delete me.rsvps[pid]; changed = true; }
+        }
+        if (commentsAvailable && !(cs instanceof Error)) {
+          const cIds = new Set(comments.map((c) => c.id));
+          const keptC = me.comments.filter((id) => cIds.has(id));
+          if (keptC.length !== me.comments.length) { me.comments = keptC; changed = true; }
         }
         const kept = me.proposals.filter((id) => pIds.has(id));
         if (kept.length !== me.proposals.length) { me.proposals = kept; changed = true; }
