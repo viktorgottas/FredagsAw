@@ -89,7 +89,7 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   bort). Filerna ligger i Storage-bucketen `aw-photos`; borttagna bilder döljs men filen ligger kvar
   i Storage tills du tar bort den där.
 - **Minnen** visar de senaste 10 AW:erna som någon gick på, med bilder. **Topplistan** visar
-  Stammisar, Idésprutor och Kanske-kungar. Passerade förslag som ingen svarade ja på raderas.
+  Stammisar, Idésprutor, Kanske-kungar och Billigaste ölen (från priserna på stor stark). Passerade förslag som ingen svarade ja på raderas.
 - Appen har tre flikar längst ner: **AW:er** (flödet med förslag och Minnen), **Föreslå** och
   **Mer** (topplista, mejl/kalender, hemskärmsguide, admin). Länkar: `#foresla`, `#mer`, `#kalender`,
   `#forslag-<id>`. En siffra på AW:er visar nya förslag man inte sett.

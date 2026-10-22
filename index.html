@@ -480,7 +480,7 @@
   .memory .meta { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
   .memory .photos { border-top: 0; padding-top: 0; margin-top: 10px; }
   .stats-grid { display: grid; gap: 18px; }
-  @media (min-width: 520px) { .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 520px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .stats-grid h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
   .stats-grid ol { list-style: none; margin: 0; padding: 0; }
   .stats-grid li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
@@ -1687,17 +1687,29 @@
 
   // ---------- Topplista ----------
   let statsLoadedAt = 0;
+  let statsRows = [];
   async function loadStats() {
     statsLoadedAt = Date.now();
-    let rows;
-    try { rows = await api("rpc/aw_stats", { method: "POST", body: {} }); }
-    catch (e) { $("#stats").hidden = true; return; }
+    try { statsRows = (await api("rpc/aw_stats", { method: "POST", body: {} })) || []; }
+    catch (e) { statsRows = []; }
+    renderStats();
+  }
+
+  let statsKey = "";
+  function renderStats() {
+    const rows = statsRows;
+    // Billigaste ölen: billigast först, vid lika pris det senast rapporterade
+    const cheap = Array.from(prices.values())
+      .sort((a, b) => a.price - b.price || new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);
+    const key = JSON.stringify([rows, cheap.map((c) => [c.place, c.price])]);
+    if (key === statsKey) return;
+    statsKey = key;
     const lists = [
       { title: "Stammisar", key: "attended", unit: (n) => n + (n === 1 ? " AW" : " AW:er") },
       { title: "Idésprutor", key: "proposed", unit: (n) => n + (n === 1 ? " förslag" : " förslag") },
       { title: "Kanske-kungar", key: "maybes", unit: (n) => n + " kanske" }
     ];
-    const medals = ["🥇", "🥈", "🥉"];
+    const medals = ["🥇", "🥈", "🥉", "4.", "5."];
     const body = $("#stats-body");
     body.replaceChildren();
     let any = false;
@@ -1717,6 +1729,21 @@
       col.append(ol);
       body.append(col);
     });
+    if (cheap.length) {
+      any = true;
+      const col = el("div");
+      col.append(el("h3", null, "Billigaste ölen 🍺"));
+      const ol = el("ol");
+      cheap.forEach((c, i) => {
+        const li = el("li");
+        const who = el("span", "who", c.place);
+        who.title = "Enligt " + c.reported_by + ", " + priceAge(c.updated_at);
+        li.append(el("span", null, medals[i] || "·"), who, el("span", "num", c.price + " kr"));
+        ol.append(li);
+      });
+      col.append(ol);
+      body.append(col);
+    }
     $("#stats").hidden = !any;
   }
 
@@ -2457,6 +2484,7 @@
     }
     $("#no-proposals").hidden = upcoming.length > 0;
     updateFeedBadge();
+    renderStats();
     updatePlaceHint();
 
     // Minnen: AW:er som har varit och som någon gick på
