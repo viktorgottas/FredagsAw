@@ -66,7 +66,10 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   till förslaget.
 - Under varje förslag finns **kommentarer** (max 280 tecken). Man kan ta bort sina egna;
   admin kan ta bort alla.
-- Sidan kan läggas på hemskärmen som en app (Safari: Dela → Lägg till på hemskärmen).
+- Direkt efter att man lagt ett förslag visas knappen **Dela i Snap-gruppen** (öppnar delningsmenyn;
+  välj Snapchat → gruppen). Utan delningsmeny kopieras texten i stället.
+- Sidan kan läggas på hemskärmen som en app; en guide för iPhone (Safari) och Android (Chrome)
+  finns längst ner och döljs när sidan redan körs som app.
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
