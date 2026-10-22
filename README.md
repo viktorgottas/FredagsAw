@@ -84,6 +84,25 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 
 Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
 
+## E-postnotiser (valfritt)
+
+Ett mejl när någon lägger ett förslag eller skriver en kommentar, via [Resend](https://resend.com)
+(gratis upp till 100 mejl/dag).
+
+1. Skapa ett konto på resend.com → **API Keys** → **Create API Key** (Sending access) → kopiera `re_…`.
+2. Kör [`epost-notiser.sql`](epost-notiser.sql) i SQL Editor.
+3. Kör (med dina värden; mejladressen måste vara den du skapade Resend-kontot med):
+
+   ```sql
+   insert into public.aw_settings (key, value) values
+     ('resend_api_key', 're_DIN_NYCKEL'),
+     ('notify_email',   'din@mejl.se'),
+     ('site_url',       'https://<användarnamn>.github.io/<repo>/')
+   on conflict (key) do update set value = excluded.value;
+   ```
+
+Stänga av: `delete from public.aw_settings where key = 'resend_api_key';`
+
 ## Rensa efteråt
 
 Ta bort allt: kör `delete from public.aw_proposal; delete from public.rsvp;` i SQL Editor (kommentarer följer med förslagen).
