@@ -172,7 +172,19 @@ begin
     return new;
   end if;
 
-  if tg_op = 'INSERT' then
+  if tg_op = 'INSERT' and new.reveal_at is not null then
+    subject := '🤫 Ny AW på hemligt ställe, ' || aw_format_time(new.starts_at);
+    html := '<h2>' || aw_html(new.created_by) || ' bjuder in till en hemlig AW 🤫</h2>'
+         || '<p><b>' || aw_html(aw_format_time(new.starts_at)) || '</b><br>'
+         || 'Platsen avslöjas ' || aw_html(aw_format_time(new.reveal_at)) || '.</p>'
+         || case when new.note is not null then '<p>' || aw_html(new.note) || '</p>' else '' end
+         || '<p>Säg till i appen om du kommer!</p>';
+  elsif tg_op = 'UPDATE' and old.reveal_at is not null and new.reveal_at is null then
+    subject := '🤫 Avslöjat: AW på ' || new.place || ', ' || aw_format_time(new.starts_at);
+    html := '<h2>Platsen är avslöjad! 🎉</h2>'
+         || '<p><b>' || aw_html(new.place) || '</b><br>' || aw_html(aw_format_time(new.starts_at)) || '</p>'
+         || '<p>Vi ses där!</p>';
+  elsif tg_op = 'INSERT' then
     subject := 'Ny AW: ' || new.place || ', ' || aw_format_time(new.starts_at);
     html := '<h2>' || aw_html(new.created_by) || ' föreslår en AW</h2>'
          || '<p><b>' || aw_html(new.place) || '</b><br>' || aw_html(aw_format_time(new.starts_at)) || '</p>'

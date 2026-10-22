@@ -70,6 +70,18 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   välj Snapchat → gruppen). Utan delningsmeny kopieras texten i stället.
 - Sidan kan läggas på hemskärmen som en app; en guide för iPhone (Safari) och Android (Chrome)
   finns längst ner och döljs när sidan redan körs som app.
+- **Nedräkning** på varje förslag ("om 2 dagar 4 tim", "Pågår nu!") och ölkonfetti när man
+  svarar "Jag kommer".
+- **Vem bjuder på första rundan?** slumpas (i databasen, `aw_draw_buyer`) bland dem som kommer,
+  när minst två har svarat ja. Alla ser samma namn; admin kan slumpa om.
+- **Hemlig plats 🤫**: kryssa i "Hemlig plats" och välj när den avslöjas. Platsen ligger i
+  `secret_place` som inte går att läsa via API:t, och avslöjas av `aw_reveal_due()` (pg_cron varje
+  minut, och när någon öppnar sidan). Prenumeranter får mejl både när den läggs upp och när den avslöjas.
+- **Bilder 📸** kan läggas upp från att AW:n börjat (skalas ner till max 1600 px JPEG, platsdata tas
+  bort). Filerna ligger i Storage-bucketen `aw-photos`; borttagna bilder döljs men filen ligger kvar
+  i Storage tills du tar bort den där.
+- **Minnen** visar de senaste 10 AW:erna som någon gick på, med bilder. **Topplistan** visar
+  Stammisar, Idésprutor och Kanske-kungar. Passerade förslag som ingen svarade ja på raderas.
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 

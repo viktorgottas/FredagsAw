@@ -13,6 +13,16 @@ create table if not exists public.aw_proposal (
   created_at timestamptz not null default now()
 );
 
+-- Nyare kolumner: vem bjuder på första rundan, och hemlig plats som avslöjas vid reveal_at.
+alter table public.aw_proposal add column if not exists buyer_name   text;
+alter table public.aw_proposal add column if not exists secret_place text;
+alter table public.aw_proposal add column if not exists reveal_at    timestamptz;
+alter table public.aw_proposal drop constraint if exists aw_proposal_secret_check;
+alter table public.aw_proposal add constraint aw_proposal_secret_check check (
+  (secret_place is null) = (reveal_at is null)
+  and (secret_place is null or char_length(btrim(secret_place)) between 1 and 60)
+);
+
 -- ---------- Svar ----------
 create table if not exists public.rsvp (
   id         uuid        primary key default gen_random_uuid(),
@@ -81,8 +91,9 @@ create policy "ta bort med rätt token" on public.rsvp
 -- Kolumnrättigheter: token går att skriva men ALDRIG läsa tillbaka,
 -- annars kunde vem som helst hämta andras token och ändra deras svar.
 revoke all on public.aw_proposal from anon, authenticated;
-grant select (id, place, starts_at, note, created_by, created_at) on public.aw_proposal to anon;
-grant insert (place, starts_at, note, created_by, token)         on public.aw_proposal to anon;
+-- secret_place går att skriva men inte läsa: den hemliga platsen syns först när den avslöjas.
+grant select (id, place, starts_at, note, created_by, created_at, buyer_name, reveal_at) on public.aw_proposal to anon;
+grant insert (place, starts_at, note, created_by, token, secret_place, reveal_at)        on public.aw_proposal to anon;
 grant update (place, starts_at, note)                            on public.aw_proposal to anon;
 grant delete                                                     on public.aw_proposal to anon;
 
@@ -122,7 +133,8 @@ grant insert (proposal_id, name, body, token)          on public.aw_comment to a
 grant delete                                           on public.aw_comment to anon;
 
 -- ---------- Städning ----------
--- Tar bort förslag vars dag (svensk tid) har passerat; svaren följer med.
+-- Tar bort förslag vars dag (svensk tid) har passerat och som ingen svarade "kommer" på.
+-- AW:er som blev av sparas (för topplistan och bilderna) men visas inte bland förslagen.
 -- Sidan anropar den när någon öppnar den. Den kan bara radera passerade förslag.
 create or replace function public.cleanup_past_proposals()
 returns integer
@@ -134,6 +146,7 @@ as $$
     delete from public.aw_proposal
     where (starts_at at time zone 'Europe/Stockholm')::date
         < (now() at time zone 'Europe/Stockholm')::date
+      and not exists (select 1 from public.rsvp r where r.proposal_id = aw_proposal.id and r.status = 'yes')
     returning 1
   )
   select count(*)::int from removed
@@ -226,3 +239,148 @@ grant execute on function public.admin_delete_proposal(uuid, text) to anon;
 
 -- Gamla svar från första versionen (utan förslag) visas inte längre.
 -- Vill du städa bort dem: delete from public.rsvp where proposal_id is null;
+
+-- ---------- Hemlig plats ----------
+-- Avslöjar hemliga platser vars tid har kommit. Körs varje minut av pg_cron (om det finns)
+-- och dessutom när någon öppnar sidan.
+create or replace function public.aw_reveal_due()
+returns integer
+language sql
+security definer
+set search_path = public
+as $$
+  with revealed as (
+    update public.aw_proposal
+       set place = secret_place, secret_place = null, reveal_at = null
+     where reveal_at is not null and reveal_at <= now()
+    returning 1
+  )
+  select count(*)::int from revealed
+$$;
+revoke all on function public.aw_reveal_due() from public, anon, authenticated;
+grant execute on function public.aw_reveal_due() to anon;
+
+do $$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+    perform cron.schedule('aw-reveal', '* * * * *', 'select public.aw_reveal_due()');
+  end if;
+exception when others then
+  raise notice 'pg_cron kunde inte aktiveras (%). Platser avslöjas ändå när någon öppnar sidan.', sqlerrm;
+end
+$$;
+
+-- ---------- Vem bjuder på första rundan? ----------
+-- Slumpar bland dem som svarat "kommer". Redan slumpat = samma svar (admin kan slumpa om).
+create or replace function public.aw_draw_buyer(p_id uuid, p_code text default null)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_buyer text;
+  pick text;
+begin
+  select buyer_name into current_buyer from aw_proposal where id = p_id for update;
+  if not found then
+    raise exception 'Förslaget finns inte' using errcode = '23503';
+  end if;
+  if current_buyer is not null and not admin_check(p_code) then
+    return current_buyer;
+  end if;
+  select name into pick from rsvp
+   where proposal_id = p_id and status = 'yes'
+     and (current_buyer is null or name <> current_buyer
+          or (select count(*) from rsvp where proposal_id = p_id and status = 'yes') = 1)
+   order by random() limit 1;
+  if pick is null then
+    raise exception 'Ingen har svarat kommer än' using errcode = '22023';
+  end if;
+  update aw_proposal set buyer_name = pick where id = p_id;
+  return pick;
+end
+$$;
+revoke all on function public.aw_draw_buyer(uuid, text) from public, anon, authenticated;
+grant execute on function public.aw_draw_buyer(uuid, text) to anon;
+
+-- ---------- Topplista ----------
+create or replace function public.aw_stats()
+returns table (name text, attended int, proposed int, maybes int)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with people as (
+    select lower(btrim(r.name)) as k, r.name,
+           (r.status = 'yes'   and p.starts_at < now())::int as att,
+           (r.status = 'maybe' and p.starts_at < now())::int as may,
+           0 as prop
+      from rsvp r join aw_proposal p on p.id = r.proposal_id
+    union all
+    select lower(btrim(created_by)), created_by, 0, 0, 1 from aw_proposal
+  )
+  select max(name), sum(att)::int, sum(prop)::int, sum(may)::int
+    from people group by k
+$$;
+revoke all on function public.aw_stats() from public, anon, authenticated;
+grant execute on function public.aw_stats() to anon;
+
+-- ---------- Bilder ----------
+-- Filerna ligger i Storage-bucketen "aw-photos" (publik läsning); tabellen håller ordning
+-- på vilka bilder som hör till vilken AW och vem som lade upp dem.
+create table if not exists public.aw_photo (
+  id          uuid        primary key default gen_random_uuid(),
+  proposal_id uuid        not null references public.aw_proposal (id) on delete cascade,
+  path        text        not null unique check (path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.jpg$'),
+  name        text        not null check (char_length(btrim(name)) between 1 and 40),
+  token       text        not null check (char_length(token) between 20 and 100),
+  created_at  timestamptz not null default now()
+);
+create index if not exists aw_photo_proposal on public.aw_photo (proposal_id, created_at);
+alter table public.aw_photo enable row level security;
+
+drop policy if exists "alla kan se bilder"            on public.aw_photo;
+drop policy if exists "alla kan lägga upp bilder"     on public.aw_photo;
+drop policy if exists "ta bort bild med rätt token"   on public.aw_photo;
+create policy "alla kan se bilder" on public.aw_photo
+  for select to anon using (true);
+create policy "alla kan lägga upp bilder" on public.aw_photo
+  for insert to anon with check (path like proposal_id::text || '/%');
+create policy "ta bort bild med rätt token" on public.aw_photo
+  for delete to anon using (token = public.rsvp_request_token());
+
+revoke all on public.aw_photo from anon, authenticated;
+grant select (id, proposal_id, path, name, created_at) on public.aw_photo to anon;
+grant insert (proposal_id, path, name, token)          on public.aw_photo to anon;
+grant delete                                           on public.aw_photo to anon;
+
+create or replace function public.admin_delete_photo(p_id uuid, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  delete from public.aw_photo where id = p_id;
+  return found;
+end
+$$;
+revoke all on function public.admin_delete_photo(uuid, text) from public, anon, authenticated;
+grant execute on function public.admin_delete_photo(uuid, text) to anon;
+
+-- Storage-bucket: publik läsning, uppladdning av jpg (max 5 MB) för alla med appen.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('aw-photos', 'aw-photos', true, 5242880, array['image/jpeg'])
+on conflict (id) do update
+  set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "aw-photos uppladdning" on storage.objects;
+create policy "aw-photos uppladdning" on storage.objects
+  for insert to anon
+  with check (bucket_id = 'aw-photos' and name ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.jpg$');

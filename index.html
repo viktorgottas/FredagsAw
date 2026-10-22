@@ -327,6 +327,97 @@
   .snap-btn svg { width: 22px; height: 22px; }
   .snap-prompt .linkish { display: block; margin: 8px auto 0; color: #333; }
 
+  /* ---- Nedräkning ---- */
+  .countdown { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+
+  /* ---- Hemlig plats ---- */
+  .proposal.secret {
+    --ink: #f3effd;
+    --muted: #cbc1ea;
+    --line: rgba(255, 255, 255, .18);
+    --surface: #2a2147;
+    --surface-2: rgba(255, 255, 255, .08);
+    --ok-bg: rgba(255, 255, 255, .12);
+    --ok-ink: #fff;
+    --brass: #f0c25c;
+    --brass-soft: rgba(240, 194, 92, .18);
+    color: var(--ink);
+    background: radial-gradient(120% 90% at 100% 0%, #4a3a7d 0%, #241c3d 55%, #17122a 100%);
+    border-color: #4a3a7d;
+  }
+  .proposal.secret .big { color: #f0c25c; }
+  .secret-info {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .1);
+    font-weight: 600;
+  }
+  .secret-info .mine { display: block; margin-top: 4px; font-weight: 400; font-size: 14px; color: var(--muted); }
+  .check-label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+  .check-label input { width: 22px; height: 22px; accent-color: var(--green); flex: none; }
+
+  /* ---- Vem bjuder ---- */
+  .buyer {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--brass-soft);
+    text-align: center;
+  }
+  .buyer-label { display: block; font-size: 14px; color: var(--muted); }
+  .buyer-name { display: block; margin: 2px 0; font: 700 28px/1.2 Oswald, sans-serif; overflow-wrap: anywhere; }
+  .buyer-name.spinning { opacity: .75; }
+  .buyer .secondary { margin-top: 6px; min-height: 44px; font-size: 16px; }
+  .draw-btn { width: 100%; border-color: var(--brass) !important; }
+
+  /* ---- Bilder ---- */
+  .photos { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .photos h4 {
+    margin: 0 0 8px;
+    font: 600 15px/1.3 Oswald, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .photo { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: var(--surface-2); }
+  .photo a { display: block; width: 100%; height: 100%; }
+  .photo img { display: block; width: 100%; height: 100%; object-fit: cover; color: transparent; font-size: 0; }
+  .photo-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 30px; height: 30px; border: 0; border-radius: 50%;
+    background: rgba(0, 0, 0, .6); color: #fff; font-size: 16px; line-height: 30px; cursor: pointer;
+  }
+  .photo-del:focus-visible { outline: 3px solid var(--brass); outline-offset: 1px; }
+  .photos .secondary { margin-top: 10px; width: 100%; }
+
+  /* ---- Minnen & topplista ---- */
+  .memory + .memory { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .memory h3 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
+  .memory .meta { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+  .memory .photos { border-top: 0; padding-top: 0; margin-top: 10px; }
+  .stats-grid { display: grid; gap: 18px; }
+  @media (min-width: 520px) { .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .stats-grid h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .stats-grid ol { list-style: none; margin: 0; padding: 0; }
+  .stats-grid li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+  .stats-grid .who { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+  .stats-grid .num { color: var(--muted); font-size: 14px; white-space: nowrap; }
+
+  /* ---- Konfetti ---- */
+  .confetti {
+    position: fixed;
+    top: -48px;
+    z-index: 1000;
+    font-size: 26px;
+    pointer-events: none;
+    animation: aw-fall var(--dur, 2.4s) cubic-bezier(.3, .6, .5, 1) forwards;
+  }
+  @keyframes aw-fall {
+    to { transform: translate(var(--dx, 0), 110vh) rotate(var(--rot, 360deg)); opacity: .9; }
+  }
+
   .install ol { margin: 0; padding-left: 22px; }
   .install li + li { margin-top: 6px; }
   .install .ios-share {
@@ -547,9 +638,32 @@
           <label for="note">Mer info <span class="opt">(valfritt)</span></label>
           <input id="note" type="text" maxlength="140" placeholder="T.ex. vi sitter i bakre rummet">
         </div>
+        <div class="field">
+          <label class="check-label"><input id="secret" type="checkbox"> 🤫 Hemlig plats – avslöjas vid en viss tid</label>
+        </div>
+        <div id="secret-fields" class="field row" hidden>
+          <div class="field">
+            <label for="reveal-date">Avslöjas dag</label>
+            <input id="reveal-date" type="date">
+          </div>
+          <div class="field">
+            <label for="reveal-time">Kl.</label>
+            <input id="reveal-time" type="time" step="900">
+          </div>
+        </div>
         <button id="new-submit" class="primary" type="submit">Lägg till förslag</button>
       </form>
       <p id="new-msg" class="msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="memories" class="card" aria-labelledby="mem-heading" hidden>
+      <h2 id="mem-heading">Minnen 📸</h2>
+      <div id="memory-list"></div>
+    </section>
+
+    <section id="stats" class="card" aria-labelledby="stats-heading" hidden>
+      <h2 id="stats-heading">Topplista 🏆</h2>
+      <div id="stats-body" class="stats-grid"></div>
     </section>
 
     <section class="card install" aria-labelledby="sub-heading">
@@ -672,6 +786,8 @@
     m.rsvps = m.rsvps && typeof m.rsvps === "object" ? m.rsvps : {};
     m.proposals = Array.isArray(m.proposals) ? m.proposals : [];
     m.comments = Array.isArray(m.comments) ? m.comments : [];
+    m.photos = Array.isArray(m.photos) ? m.photos : [];
+    m.secrets = m.secrets && typeof m.secrets === "object" ? m.secrets : {};
     return m;
   }
 
@@ -681,6 +797,13 @@
   let proposals = [];
   let rsvps = [];
   let comments = [];
+  let photos = [];
+  let photosAvailable = false;
+  let extrasAvailable = true; // kolumnerna buyer_name/reveal_at finns (ny SQL körd)
+  const BASIC_COLS = "id,place,starts_at,note,created_by,created_at";
+  const EXTRA_COLS = BASIC_COLS + ",buyer_name,reveal_at";
+  const proposalCols = () => (extrasAvailable ? EXTRA_COLS : BASIC_COLS);
+  const memCards = new Map(); // proposalId -> minneskort
   let commentsAvailable = true;
   let busy = 0;
   let listSeq = 0;
@@ -916,6 +1039,287 @@
   const dayKey = (d) => new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
   function isPast(p) { return dayKey(new Date(p.starts_at)) < dayKey(new Date()); }
 
+  // ---------- Konfetti ----------
+  function confetti(count = 28) {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const emojis = ["🍺", "🍻", "🎉", "✨", "🍺"];
+    for (let i = 0; i < count; i++) {
+      const c = el("span", "confetti", emojis[i % emojis.length]);
+      c.setAttribute("aria-hidden", "true");
+      c.style.left = Math.random() * 100 + "vw";
+      c.style.setProperty("--dx", (Math.random() * 120 - 60) + "px");
+      c.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+      c.style.setProperty("--dur", (1.8 + Math.random() * 1.4) + "s");
+      c.style.animationDelay = (Math.random() * .5) + "s";
+      c.style.fontSize = (18 + Math.random() * 18) + "px";
+      document.body.append(c);
+      setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // ---------- Nedräkning ----------
+  function untilText(ms) {
+    const min = Math.max(1, Math.round(ms / 60000));
+    const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
+    if (d >= 1) return "om " + d + (d === 1 ? " dag" : " dagar") + (h ? " " + h + " tim" : "");
+    if (h >= 1) return "om " + h + " tim" + (m ? " " + m + " min" : "");
+    return "om " + m + " min";
+  }
+  function countdownText(p) {
+    const diff = new Date(p.starts_at).getTime() - Date.now();
+    if (diff > 0) return "⏳ " + untilText(diff);
+    if (diff > -4 * 3600 * 1000) return "🍻 Pågår nu!";
+    return "Var i dag";
+  }
+
+  // ---------- Hemlig plats ----------
+  let revealPending = false;
+  async function revealDue() {
+    if (revealPending) return;
+    revealPending = true;
+    try { await api("rpc/aw_reveal_due", { method: "POST", body: {} }); } catch (e) { /* cron sköter det annars */ }
+    finally { revealPending = false; refresh(); }
+  }
+
+  // ---------- Vem bjuder? ----------
+  async function drawBuyer(p, card, again = false) {
+    const b = card.refs.buyer;
+    if (card.drawing) return;
+    const names = rsvps.filter((r) => r.proposal_id === p.id && r.status === "yes").map((r) => r.name);
+    if (!names.length) return;
+    card.drawing = true;
+    b.drawBtn.disabled = b.redrawBtn.disabled = true;
+    b.drawBtn.hidden = true;
+    b.result.hidden = false;
+    b.name.classList.add("spinning");
+    let i = 0, delay = 60;
+    const started = Date.now();
+    let answer = null, failed = null;
+    api("rpc/aw_draw_buyer", { method: "POST", body: again ? { p_id: p.id, p_code: adminCode } : { p_id: p.id } })
+      .then((r) => { answer = r; }, (e) => { failed = e; });
+    await new Promise((resolve) => {
+      const tick = () => {
+        b.name.textContent = names[i++ % names.length];
+        const elapsed = Date.now() - started;
+        if ((answer !== null || failed) && elapsed > 1800) return resolve();
+        if (elapsed > 1000) delay = Math.min(delay * 1.15, 260);
+        setTimeout(tick, delay);
+      };
+      tick();
+    });
+    b.name.classList.remove("spinning");
+    card.drawing = false;
+    b.drawBtn.disabled = b.redrawBtn.disabled = false;
+    if (failed) {
+      showMsg(card.refs.msg, errorText("Kunde inte slumpa", failed), "error");
+      b.result.hidden = true;
+      b.drawBtn.hidden = false;
+      return;
+    }
+    proposals = proposals.map((x) => (x.id === p.id ? { ...x, buyer_name: answer } : x));
+    b.name.textContent = answer;
+    confetti(18);
+    render();
+  }
+
+  // ---------- Bilder ----------
+  const STORAGE_BASE = SUPABASE_URL.replace(/\/+$/, "").replace(/\/rest\/v1$/, "") + "/storage/v1";
+  const photoUrl = (path) => STORAGE_BASE + "/object/public/aw-photos/" + path.split("/").map(encodeURIComponent).join("/");
+  function uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+    return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+  }
+
+  // Skalar ner till max 1600 px och gör om till JPEG (tar även bort platsdata från bilden)
+  async function toJpeg(file) {
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (e) {
+      src = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Kunde inte läsa bilden"));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+    const w = src.width, h = src.height;
+    const scale = Math.min(1, 1600 / Math.max(w, h));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    canvas.getContext("2d").drawImage(src, 0, 0, canvas.width, canvas.height);
+    return await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Kunde inte göra om bilden"))), "image/jpeg", 0.82));
+  }
+
+  async function uploadPhoto(pid, file, name) {
+    const blob = await toJpeg(file);
+    const path = pid + "/" + uuid() + ".jpg";
+    const headers = { apikey: SUPABASE_ANON_KEY, "Content-Type": "image/jpeg", "x-upsert": "false", "cache-control": "31536000" };
+    if (SUPABASE_ANON_KEY.startsWith("eyJ")) headers.Authorization = "Bearer " + SUPABASE_ANON_KEY;
+    let res;
+    try { res = await fetch(STORAGE_BASE + "/object/aw-photos/" + path, { method: "POST", headers, body: blob }); }
+    catch (e) { throw new ApiError(0, { code: "NETWORK" }); }
+    if (!res.ok) {
+      let d = {};
+      try { d = await res.json(); } catch (e) {}
+      const text = String(d.message || d.error || "");
+      if (/bucket not found/i.test(text)) throw new ApiError(404, { code: "PGRST205" });
+      throw new ApiError(res.status, { message: text });
+    }
+    const rows = await api("aw_photo?select=id,proposal_id,path,name,created_at", {
+      method: "POST", body: { proposal_id: pid, path, name, token: me.token }, prefer: "return=representation"
+    });
+    return rows[0];
+  }
+
+  function buildPhotoBlock(pid) {
+    const b = { pid, busy: false };
+    b.root = el("section", "photos");
+    b.heading = el("h4", null, "Bilder");
+    b.grid = el("div", "photo-grid");
+    b.input = el("input");
+    b.input.type = "file";
+    b.input.accept = "image/*";
+    b.input.multiple = true;
+    b.input.hidden = true;
+    b.btn = el("button", "secondary", "📸 Lägg till bilder");
+    b.btn.type = "button";
+    b.btn.addEventListener("click", () => {
+      if (!requireName(b.msg)) return;
+      b.input.click();
+    });
+    b.input.addEventListener("change", async () => {
+      const files = Array.from(b.input.files || []);
+      b.input.value = "";
+      if (!files.length || b.busy) return;
+      const name = requireName(b.msg);
+      if (!name) return;
+      b.busy = true;
+      busy++;
+      b.btn.disabled = true;
+      let done = 0;
+      try {
+        for (const f of files) {
+          showMsg(b.msg, "Laddar upp " + (done + 1) + " av " + files.length + " …", "info");
+          const ph = await uploadPhoto(pid, f, name);
+          me.photos.push(ph.id);
+          saveMe();
+          photos = photos.concat([ph]);
+          done++;
+          updatePhotoBlock(b);
+        }
+        showMsg(b.msg, done === 1 ? "Bilden är uppladdad! 📸" : done + " bilder är uppladdade! 📸", "ok");
+      } catch (e) {
+        showMsg(b.msg, errorText(done ? "Några bilder laddades upp, men inte alla" : "Kunde inte ladda upp bilden", e), "error");
+      } finally {
+        b.busy = false;
+        busy--;
+        b.btn.disabled = false;
+        refresh();
+      }
+    });
+    b.msg = el("p", "msg");
+    b.msg.setAttribute("role", "status");
+    b.msg.setAttribute("aria-live", "polite");
+    b.root.append(b.heading, b.grid, b.btn, b.input, b.msg);
+    return b;
+  }
+
+  async function removePhoto(ph, b) {
+    if (!confirm("Ta bort bilden?")) return;
+    try {
+      let ok = false;
+      if (me.photos.includes(ph.id)) {
+        const rows = await api("aw_photo?id=eq." + encodeURIComponent(ph.id) + "&select=id", {
+          method: "DELETE", withToken: true, prefer: "return=representation"
+        });
+        ok = !!(rows && rows.length);
+      }
+      if (!ok && adminCode) ok = await api("rpc/admin_delete_photo", { method: "POST", body: { p_id: ph.id, p_code: adminCode } });
+      if (!ok) throw new Error("ej borttagen");
+      me.photos = me.photos.filter((id) => id !== ph.id);
+      saveMe();
+      photos = photos.filter((x) => x.id !== ph.id);
+      updatePhotoBlock(b);
+    } catch (e) {
+      showMsg(b.msg, errorText("Kunde inte ta bort bilden", e), "error");
+    }
+  }
+
+  function updatePhotoBlock(b) {
+    const list = photos.filter((x) => x.proposal_id === b.pid);
+    b.heading.textContent = list.length ? "Bilder (" + list.length + ")" : "Bilder";
+    const have = new Map(Array.from(b.grid.children).map((n) => [n.dataset.id, n]));
+    const want = new Set(list.map((x) => x.id));
+    have.forEach((n, id) => { if (!want.has(id)) n.remove(); });
+    list.forEach((ph) => {
+      let n = have.get(ph.id);
+      if (!n) {
+        n = el("div", "photo");
+        n.dataset.id = ph.id;
+        const a = el("a");
+        a.href = photoUrl(ph.path);
+        a.target = "_blank";
+        a.rel = "noopener";
+        const img = el("img");
+        img.src = photoUrl(ph.path);
+        img.loading = "lazy";
+        img.alt = "Bild från " + ph.name;
+        a.append(img);
+        n.append(a);
+        b.grid.append(n);
+      }
+      let del = n.querySelector(".photo-del");
+      const canDelete = me.photos.includes(ph.id) || !!adminCode;
+      if (canDelete && !del) {
+        del = el("button", "photo-del", "×");
+        del.type = "button";
+        del.setAttribute("aria-label", "Ta bort bilden från " + ph.name);
+        del.addEventListener("click", () => removePhoto(ph, b));
+        n.append(del);
+      } else if (!canDelete && del) del.remove();
+    });
+  }
+
+  // ---------- Topplista ----------
+  let statsLoadedAt = 0;
+  async function loadStats() {
+    statsLoadedAt = Date.now();
+    let rows;
+    try { rows = await api("rpc/aw_stats", { method: "POST", body: {} }); }
+    catch (e) { $("#stats").hidden = true; return; }
+    const lists = [
+      { title: "Stammisar", key: "attended", unit: (n) => n + (n === 1 ? " AW" : " AW:er") },
+      { title: "Idésprutor", key: "proposed", unit: (n) => n + (n === 1 ? " förslag" : " förslag") },
+      { title: "Kanske-kungar", key: "maybes", unit: (n) => n + " kanske" }
+    ];
+    const medals = ["🥇", "🥈", "🥉"];
+    const body = $("#stats-body");
+    body.replaceChildren();
+    let any = false;
+    lists.forEach((l) => {
+      const top = (rows || []).filter((r) => r[l.key] > 0)
+        .sort((a, b) => b[l.key] - a[l.key] || a.name.localeCompare(b.name, "sv")).slice(0, 5);
+      if (!top.length) return;
+      any = true;
+      const col = el("div");
+      col.append(el("h3", null, l.title));
+      const ol = el("ol");
+      top.forEach((r, i) => {
+        const li = el("li");
+        li.append(el("span", null, medals[i] || "·"), el("span", "who", r.name), el("span", "num", l.unit(r[l.key])));
+        ol.append(li);
+      });
+      col.append(ol);
+      body.append(col);
+    });
+    $("#stats").hidden = !any;
+  }
+
   // ---------- Svar ----------
   async function respond(p, status, card) {
     if (card.busy) return;
@@ -936,6 +1340,8 @@
       }
       const id = rows && rows[0] && rows[0].id;
       if (!id) throw new Error("oväntat svar");
+      const wasYes = rsvps.some((r) => r.id === me.rsvps[p.id] && r.status === "yes");
+      if (status === "yes" && !wasYes) confetti();
       me.rsvps[p.id] = id;
       saveMe();
       // Visa direkt, innan nästa hämtning
@@ -1105,18 +1511,27 @@
     const v = readProposalFields({ place: placeIn, date: $("#date"), time: $("#time"), note: noteIn }, msgNode);
     if (!v) return;
     const { place, starts, note } = v;
+    let reveal = null;
+    if ($("#secret").checked) {
+      const rd = $("#reveal-date"), rt = $("#reveal-time");
+      [rd, rt].forEach((i) => i.removeAttribute("aria-invalid"));
+      reveal = rd.value && rt.value ? stockholmTime(rd.value, rt.value) : new Date(NaN);
+      const bad = (i, t) => { i.setAttribute("aria-invalid", "true"); i.focus(); showMsg(msgNode, t, "error"); };
+      if (isNaN(reveal)) return bad(rd, "Välj när platsen ska avslöjas.");
+      if (reveal.getTime() <= Date.now()) return bad(rt, "Avslöjandet måste ligga i framtiden.");
+      if (reveal.getTime() > starts.getTime()) return bad(rt, "Platsen måste avslöjas senast när AW:n börjar.");
+    }
 
     submit.disabled = true;
     busy++;
     showMsg(msgNode, "Sparar förslaget …", "info");
     try {
-      const rows = await api("aw_proposal?select=id,place,starts_at,note,created_by,created_at", {
-        method: "POST",
-        body: { place, starts_at: starts.toISOString(), note: note || null, created_by: name, token: me.token },
-        prefer: "return=representation"
-      });
+      const body = { place, starts_at: starts.toISOString(), note: note || null, created_by: name, token: me.token };
+      if (reveal) Object.assign(body, { place: "Hemligt ställe 🤫", secret_place: place, reveal_at: reveal.toISOString() });
+      const rows = await api("aw_proposal?select=" + proposalCols(), { method: "POST", body, prefer: "return=representation" });
       const p = rows && rows[0];
       if (!p) throw new Error("oväntat svar");
+      if (reveal) me.secrets[p.id] = place;
       me.proposals.push(p.id);
       saveMe();
       proposals = proposals.concat([p]);
@@ -1136,6 +1551,8 @@
       render();
       placeIn.value = "";
       noteIn.value = "";
+      $("#secret").checked = false;
+      $("#secret-fields").hidden = true;
       showMsg(msgNode, "Förslaget är tillagt och du står som ”kommer”.", "ok");
       const card = cards.get(p.id);
       if (card) {
@@ -1162,6 +1579,11 @@
     badges.append(refs.newBadge, refs.badge);
     refs.title = el("h3");
     refs.when = el("p", "when");
+    refs.countdown = el("p", "countdown");
+    refs.secretInfo = el("p", "secret-info");
+    refs.secretText = el("span");
+    refs.secretMine = el("span", "mine");
+    refs.secretInfo.append(refs.secretText, refs.secretMine);
     refs.note = el("p", "note");
     refs.by = el("p", "by");
 
@@ -1315,7 +1737,26 @@
     later.addEventListener("click", () => { refs.snapPrompt.hidden = true; });
     refs.snapPrompt.append(snapBtn, later);
 
-    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.note, refs.by, ef.root, tally, choices, refs.msg, groupsWrap, cwrap, actionsWrap, links);
+    // Vem bjuder på första rundan?
+    const buyer = { root: el("div", "buyer") };
+    buyer.result = el("div");
+    buyer.result.append(el("span", "buyer-label", "🍺 Första rundan bjuder"));
+    buyer.name = el("span", "buyer-name");
+    buyer.result.append(buyer.name);
+    buyer.redrawBtn = el("button", "secondary", "Slumpa om");
+    buyer.redrawBtn.type = "button";
+    buyer.redrawBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card, true));
+    buyer.result.append(buyer.redrawBtn);
+    buyer.drawBtn = el("button", "secondary draw-btn", "🎲 Vem bjuder på första rundan?");
+    buyer.drawBtn.type = "button";
+    buyer.drawBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card));
+    buyer.root.append(buyer.drawBtn, buyer.result);
+    refs.buyer = buyer;
+
+    refs.photoBlock = buildPhotoBlock(p.id);
+
+    root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.secretInfo, refs.note, refs.by, ef.root,
+      tally, choices, refs.msg, groupsWrap, buyer.root, refs.photoBlock.root, cwrap, actionsWrap, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -1333,6 +1774,22 @@
     card.root.classList.toggle("leader", isLeader);
     refs.title.textContent = p.place;
     refs.when.textContent = formatWhen(p.starts_at);
+    refs.countdown.textContent = countdownText(p);
+
+    // Hemlig plats
+    const secret = !!p.reveal_at;
+    card.root.classList.toggle("secret", secret);
+    refs.secretInfo.hidden = !secret;
+    refs.map.hidden = secret;
+    if (secret) {
+      const left = new Date(p.reveal_at).getTime() - Date.now();
+      refs.secretText.textContent = left > 0
+        ? "🤫 Platsen avslöjas " + formatWhen(p.reveal_at).toLowerCase() + " (" + untilText(left) + ")"
+        : "🤫 Platsen avslöjas nu …";
+      refs.secretMine.textContent = me.secrets[p.id] ? "Bara du ser: " + me.secrets[p.id] : "";
+      refs.secretMine.hidden = !me.secrets[p.id];
+      if (left <= 0) revealDue();
+    }
     refs.note.textContent = p.note || "";
     refs.note.hidden = !p.note;
     refs.by.textContent = "Föreslaget av " + p.created_by;
@@ -1374,7 +1831,21 @@
     refs.removeRsvp.hidden = !mine;
     const canManage = !!adminCode || me.proposals.includes(p.id);
     refs.removeProposal.hidden = !canManage;
-    refs.editBtn.hidden = !canManage || !refs.edit.root.hidden;
+    refs.editBtn.hidden = !canManage || !refs.edit.root.hidden || !!p.reveal_at;
+
+    // Vem bjuder?
+    const b = refs.buyer;
+    if (!card.drawing) {
+      b.root.hidden = !extrasAvailable || (!p.buyer_name && by.yes.length < 2);
+      b.drawBtn.hidden = !!p.buyer_name;
+      b.result.hidden = !p.buyer_name;
+      b.name.textContent = p.buyer_name || "";
+      b.redrawBtn.hidden = !adminCode;
+    }
+
+    // Bilder: från och med att AW:n har börjat
+    refs.photoBlock.root.hidden = !photosAvailable || new Date(p.starts_at).getTime() > Date.now();
+    updatePhotoBlock(refs.photoBlock);
     if (!canManage) refs.edit.root.hidden = true;
     renderComments(card, p);
   }
@@ -1518,6 +1989,29 @@
       desired.forEach((n) => container.append(n));
     }
     $("#no-proposals").hidden = upcoming.length > 0;
+
+    // Minnen: AW:er som har varit och som någon gick på
+    const memories = proposals.filter((p) => isPast(p) && yesCount(p) > 0)
+      .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at)).slice(0, 10);
+    const memList = $("#memory-list");
+    const keepMem = new Set(memories.map((p) => p.id));
+    for (const [id, m] of memCards) { if (!keepMem.has(id)) { m.root.remove(); memCards.delete(id); } }
+    memories.forEach((p) => {
+      let m = memCards.get(p.id);
+      if (!m) {
+        m = { root: el("article", "memory"), title: el("h3"), meta: el("p", "meta"), photoBlock: buildPhotoBlock(p.id) };
+        m.root.append(m.title, m.meta, m.photoBlock.root);
+        memCards.set(p.id, m);
+      }
+      m.title.textContent = p.place;
+      const who = (byProposal.get(p.id) || []).filter((r) => r.status === "yes").map((r) => r.name);
+      m.meta.textContent = formatWhen(p.starts_at) + " · " + who.length + " var där: " + who.join(", ") +
+        (p.buyer_name ? " · " + p.buyer_name + " bjöd 🍺" : "");
+      m.photoBlock.root.hidden = !photosAvailable;
+      updatePhotoBlock(m.photoBlock);
+      memList.append(m.root);
+    });
+    $("#memories").hidden = !memories.length;
   }
 
   function trackNew(known) {
@@ -1557,11 +2051,20 @@
     const seq = ++listSeq;
     const updated = $("#updated");
     try {
-      const [ps, rs, cs] = await Promise.all([
-        api("aw_proposal?select=id,place,starts_at,note,created_by,created_at&order=starts_at.asc"),
+      const getProposals = () => api("aw_proposal?select=" + proposalCols() + "&order=starts_at.asc").catch((e) => {
+        // Ny SQL inte körd än: hämta utan de nya kolumnerna
+        if (extrasAvailable && e instanceof ApiError && (e.detail.code === "42703" || e.detail.code === "42501")) {
+          extrasAvailable = false;
+          return api("aw_proposal?select=" + BASIC_COLS + "&order=starts_at.asc");
+        }
+        throw e;
+      });
+      const [ps, rs, cs, phs] = await Promise.all([
+        getProposals(),
         api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc"),
         // Kommentarer får inte sänka hela sidan om tabellen saknas (gammal SQL)
-        api("aw_comment?select=id,proposal_id,name,body,created_at&order=created_at.asc").catch((e) => e)
+        api("aw_comment?select=id,proposal_id,name,body,created_at&order=created_at.asc").catch((e) => e),
+        api("aw_photo?select=id,proposal_id,path,name,created_at&order=created_at.asc").catch((e) => e)
       ]);
       if (seq !== listSeq) return; // ett nyare anrop har startat
       const known = new Set(proposals.map((p) => p.id));
@@ -1573,6 +2076,8 @@
         commentsAvailable = true;
         comments = cs || [];
       }
+      photosAvailable = !(phs instanceof Error);
+      if (photosAvailable) photos = phs || [];
       trackNew(known);
 
       if (!busy) {
@@ -1594,6 +2099,7 @@
       }
 
       render();
+      if (Date.now() - statsLoadedAt > 5 * 60 * 1000) loadStats();
       updated.classList.remove("error");
       updated.textContent = "Uppdateras automatiskt · senast " +
         new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -1647,6 +2153,18 @@
   ["place", "date", "time", "note"].forEach((id) =>
     $("#" + id).addEventListener("input", (e) => e.target.removeAttribute("aria-invalid")));
   $("#new-form").addEventListener("submit", addProposal);
+  $("#secret").addEventListener("change", () => {
+    const on = $("#secret").checked;
+    $("#secret-fields").hidden = !on;
+    if (on && !$("#reveal-date").value) {
+      // Förslag: samma dag, två timmar före start
+      const [h, m] = ($("#time").value || "17:00").split(":").map(Number);
+      const t = Math.max(0, h * 60 + m - 120);
+      $("#reveal-date").value = $("#date").value;
+      $("#reveal-time").value = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+    }
+    $("#place").placeholder = on ? "Den hemliga platsen (visas först vid avslöjandet)" : "T.ex. Sue Ellen, Kungsgatan";
+  });
 
   // ---------- Admin ----------
   // Öppna sidan med #admin för att logga in med admin-koden.
