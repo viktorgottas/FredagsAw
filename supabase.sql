@@ -302,6 +302,47 @@ begin
   return pick;
 end
 $$;
+-- Admin: ta bort någons svar (nollställer "vem bjuder" om det var den personen)
+create or replace function public.admin_delete_rsvp(p_id uuid, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare r rsvp;
+begin
+  if not admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  delete from rsvp where id = p_id returning * into r;
+  if r.id is null then return false; end if;
+  update aw_proposal set buyer_name = null
+   where id = r.proposal_id and buyer_name = r.name
+     and not exists (select 1 from rsvp x where x.proposal_id = r.proposal_id and x.status = 'yes' and x.name = r.name);
+  return true;
+end
+$$;
+
+-- Admin: nollställ "vem bjuder på första rundan"
+create or replace function public.admin_clear_buyer(p_id uuid, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  update aw_proposal set buyer_name = null where id = p_id;
+  return found;
+end
+$$;
+revoke all on function public.admin_delete_rsvp(uuid, text) from public, anon, authenticated;
+revoke all on function public.admin_clear_buyer(uuid, text) from public, anon, authenticated;
+grant execute on function public.admin_delete_rsvp(uuid, text) to anon;
+grant execute on function public.admin_clear_buyer(uuid, text) to anon;
+
 revoke all on function public.aw_draw_buyer(uuid, text) from public, anon, authenticated;
 grant execute on function public.aw_draw_buyer(uuid, text) to anon;
 

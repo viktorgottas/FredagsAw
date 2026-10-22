@@ -546,6 +546,19 @@
     background: var(--brass-soft);
     color: var(--ink);
   }
+  .pill-del {
+    margin: -4px -6px -4px 6px;
+    width: 26px; height: 26px;
+    border: 0; border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 15px; line-height: 26px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .pill-del:hover { color: var(--error-ink); }
+  .pill-del:focus-visible { outline: 3px solid var(--brass); outline-offset: 1px; }
+  .buyer-admin { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .pill .you {
     margin-left: 6px;
     font-size: 12px;
@@ -1120,6 +1133,40 @@
     b.name.textContent = answer;
     confetti(18);
     render();
+  }
+
+  // ---------- Admin: ta bort folk / slumpning ----------
+  async function adminRemoveRsvp(r, card) {
+    const p = currentProposal(r.proposal_id);
+    if (!adminCode || !confirm("Ta bort " + r.name + " från " + p.place + "?")) return;
+    try {
+      const ok = await api("rpc/admin_delete_rsvp", { method: "POST", body: { p_id: r.id, p_code: adminCode } });
+      if (!ok) throw new Error("ej borttagen");
+      rsvps = rsvps.filter((x) => x.id !== r.id);
+      if (p.buyer_name === r.name && !rsvps.some((x) => x.proposal_id === p.id && x.status === "yes" && x.name === r.name)) {
+        proposals = proposals.map((x) => (x.id === p.id ? { ...x, buyer_name: null } : x));
+      }
+      render();
+      showMsg(card.refs.msg, r.name + " är borttagen.", "ok");
+    } catch (e) {
+      showMsg(card.refs.msg, errorText("Kunde inte ta bort " + r.name, e), "error");
+    } finally {
+      refresh();
+    }
+  }
+
+  async function adminClearBuyer(p, card) {
+    if (!adminCode || !confirm("Ta bort slumpningen av vem som bjuder?")) return;
+    try {
+      await api("rpc/admin_clear_buyer", { method: "POST", body: { p_id: p.id, p_code: adminCode } });
+      proposals = proposals.map((x) => (x.id === p.id ? { ...x, buyer_name: null } : x));
+      render();
+      showMsg(card.refs.msg, "Slumpningen är borttagen.", "ok");
+    } catch (e) {
+      showMsg(card.refs.msg, errorText("Kunde inte ta bort slumpningen", e), "error");
+    } finally {
+      refresh();
+    }
   }
 
   // ---------- Bilder ----------
@@ -1743,10 +1790,15 @@
     buyer.result.append(el("span", "buyer-label", "🍺 Första rundan bjuder"));
     buyer.name = el("span", "buyer-name");
     buyer.result.append(buyer.name);
+    buyer.admin = el("div", "buyer-admin");
     buyer.redrawBtn = el("button", "secondary", "Slumpa om");
     buyer.redrawBtn.type = "button";
     buyer.redrawBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card, true));
-    buyer.result.append(buyer.redrawBtn);
+    buyer.clearBtn = el("button", "secondary", "Ta bort");
+    buyer.clearBtn.type = "button";
+    buyer.clearBtn.addEventListener("click", () => adminClearBuyer(currentProposal(p.id), card));
+    buyer.admin.append(buyer.redrawBtn, buyer.clearBtn);
+    buyer.result.append(buyer.admin);
     buyer.drawBtn = el("button", "secondary draw-btn", "🎲 Vem bjuder på första rundan?");
     buyer.drawBtn.type = "button";
     buyer.drawBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card));
@@ -1824,6 +1876,13 @@
           li.classList.add("me");
           li.append(el("span", "you", "du"));
         }
+        if (adminCode) {
+          const del = el("button", "pill-del", "×");
+          del.type = "button";
+          del.setAttribute("aria-label", "Ta bort " + r.name + " från " + p.place);
+          del.addEventListener("click", () => adminRemoveRsvp(r, card));
+          li.append(del);
+        }
         g.list.append(li);
       });
     });
@@ -1840,7 +1899,7 @@
       b.drawBtn.hidden = !!p.buyer_name;
       b.result.hidden = !p.buyer_name;
       b.name.textContent = p.buyer_name || "";
-      b.redrawBtn.hidden = !adminCode;
+      b.admin.hidden = !adminCode;
     }
 
     // Bilder: från och med att AW:n har börjat
