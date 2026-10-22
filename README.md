@@ -62,12 +62,25 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - Förslaget med flest "kommer" får etiketten **Flest kommer**, och förslag som tillkommit sedan
   ditt förra besök märks **Nytt**.
 - Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
-  (.ics-fil) och **Hitta hit** (Google Maps). Delade länkar går direkt till förslaget.
+  (iPhone/Apple, Google eller Outlook) och **Hitta hit** (Google Maps). Delade länkar går direkt
+  till förslaget.
 - Under varje förslag finns **kommentarer** (max 280 tecken). Man kan ta bort sina egna;
   admin kan ta bort alla.
 - Sidan kan läggas på hemskärmen som en app (Safari: Dela → Lägg till på hemskärmen).
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
+
+## Kalender för iPhone/Mac (Edge Function)
+
+Safari kan inte öppna kalenderfiler som skapas i sidan, så "iPhone / Apple" hämtar dem från
+en liten Supabase-funktion:
+
+1. Supabase → **Edge Functions** → **Deploy a new function** → **Via Editor**.
+2. Döp den till `aw-ics`, ersätt koden med innehållet i
+   [`supabase/functions/aw-ics/index.ts`](supabase/functions/aw-ics/index.ts) och klicka **Deploy**.
+3. Öppna funktionen → **Details** och stäng av **Verify JWT** (annars kan en vanlig länk inte öppna den) → **Save**.
+
+Utan funktionen laddas kalenderfilen ner i stället (öppna den i Filer).
 
 ## Admin: ta bort vilket förslag eller vilken kommentar som helst
 

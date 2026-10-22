@@ -285,6 +285,18 @@
   .action:hover { border-color: var(--brass); }
   .action:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
   .action svg { width: 17px; height: 17px; flex: none; }
+  .action[aria-expanded="true"] { border-color: var(--brass); background: var(--brass-soft); }
+  .cal-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .cal-menu .action { background: var(--surface); }
   .proposal h3 {
     margin: 0;
     font-size: 26px;
@@ -745,6 +757,54 @@
 
   function icsDate(ms) { return new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
   function icsEscape(t) { return String(t).replace(/\\/g, "\\\\").replace(/[,;]/g, (m) => "\\" + m).replace(/\r?\n/g, "\\n"); }
+  // iPhone/Mac: .ics från Supabase-funktionen "aw-ics" (Safari öppnar inte filer skapade i sidan).
+  const ICS_FUNCTION = SUPABASE_URL.replace(/\/+$/, "").replace(/\/rest\/v1$/, "") + "/functions/v1/aw-ics";
+  function appleCalendarUrl(p) { return ICS_FUNCTION + "?id=" + encodeURIComponent(p.id); }
+  function googleCalendarUrl(p) {
+    const start = new Date(p.starts_at).getTime();
+    const q = new URLSearchParams({
+      action: "TEMPLATE",
+      text: "AW: " + p.place,
+      dates: icsDate(start) + "/" + icsDate(start + 3 * 3600 * 1000),
+      location: p.place,
+      details: (p.note ? p.note + "\n\n" : "") + "Svara här: " + proposalUrl(p)
+    });
+    return "https://calendar.google.com/calendar/render?" + q.toString();
+  }
+  function outlookCalendarUrl(p) {
+    const start = new Date(p.starts_at).getTime();
+    const q = new URLSearchParams({
+      path: "/calendar/action/compose",
+      rru: "addevent",
+      subject: "AW: " + p.place,
+      startdt: new Date(start).toISOString(),
+      enddt: new Date(start + 3 * 3600 * 1000).toISOString(),
+      location: p.place,
+      body: (p.note ? p.note + "\n\n" : "") + "Svara här: " + proposalUrl(p)
+    });
+    return "https://outlook.live.com/calendar/0/deeplink/compose?" + q.toString();
+  }
+
+  async function openAppleCalendar(p, card) {
+    const url = appleCalendarUrl(p);
+    try {
+      // Kolla att funktionen finns innan vi navigerar dit
+      const res = await fetch(url, { cache: "no-store" });
+      if (res.ok && (res.headers.get("content-type") || "").includes("calendar")) {
+        location.href = url;
+        return;
+      }
+    } catch (e) { /* faller tillbaka nedan */ }
+    // Reserv: ladda ner filen direkt från sidan
+    const a = document.createElement("a");
+    a.href = calendarHref(p);
+    a.download = "AW " + p.place.replace(/[^\p{L}\p{N} ]+/gu, "").trim() + ".ics";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    showMsg(card.refs.msg, "Kalenderfilen laddades ner. Öppna den (t.ex. i Filer) för att lägga in den i kalendern.", "info");
+  }
+
   function calendarHref(p) {
     const start = new Date(p.starts_at).getTime();
     const lines = [
@@ -1099,14 +1159,33 @@
     share.type = "button";
     share.append(icon("share"), document.createTextNode("Dela"));
     share.addEventListener("click", () => shareProposal(currentProposal(p.id), card));
-    refs.cal = el("a", "action");
+    refs.cal = el("button", "action");
+    refs.cal.type = "button";
     refs.cal.append(icon("cal"), document.createTextNode("Kalender"));
-    refs.cal.download = "aw.ics";
+    refs.cal.setAttribute("aria-expanded", "false");
+    refs.calMenu = el("div", "cal-menu");
+    refs.calMenu.hidden = true;
+    refs.calMenu.id = "kal-" + p.id;
+    refs.cal.setAttribute("aria-controls", refs.calMenu.id);
+    refs.cal.addEventListener("click", () => {
+      const open = refs.calMenu.hidden;
+      refs.calMenu.hidden = !open;
+      refs.cal.setAttribute("aria-expanded", String(open));
+    });
+    const apple = el("button", "action", "iPhone / Apple");
+    apple.type = "button";
+    apple.addEventListener("click", () => openAppleCalendar(currentProposal(p.id), card));
+    refs.calGoogle = el("a", "action", "Google");
+    refs.calOutlook = el("a", "action", "Outlook");
+    [refs.calGoogle, refs.calOutlook].forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
+    refs.calMenu.append(apple, refs.calGoogle, refs.calOutlook);
     refs.map = el("a", "action");
     refs.map.append(icon("map"), document.createTextNode("Hitta hit"));
     refs.map.target = "_blank";
     refs.map.rel = "noopener";
     actions.append(share, refs.cal, refs.map);
+    const actionsWrap = el("div");
+    actionsWrap.append(actions, refs.calMenu);
 
     const cwrap = el("section", "comments");
     refs.commentHeading = el("h4", null, "Kommentarer");
@@ -1128,7 +1207,7 @@
     refs.commentMsg.setAttribute("aria-live", "polite");
     cwrap.append(refs.commentHeading, refs.commentList, cform, refs.commentMsg);
 
-    root.append(badges, refs.title, refs.when, refs.note, refs.by, ef.root, tally, choices, refs.msg, groupsWrap, cwrap, actions, links);
+    root.append(badges, refs.title, refs.when, refs.note, refs.by, ef.root, tally, choices, refs.msg, groupsWrap, cwrap, actionsWrap, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -1140,8 +1219,8 @@
     refs.badge.hidden = !isLeader;
     refs.newBadge.hidden = !newIds.has(p.id);
     card.root.id = "forslag-" + p.id;
-    refs.cal.href = calendarHref(p);
-    refs.cal.download = "AW " + p.place.replace(/[^\p{L}\p{N} ]+/gu, "").trim() + ".ics";
+    refs.calGoogle.href = googleCalendarUrl(p);
+    refs.calOutlook.href = outlookCalendarUrl(p);
     refs.map.href = mapHref(p);
     card.root.classList.toggle("leader", isLeader);
     refs.title.textContent = p.place;
