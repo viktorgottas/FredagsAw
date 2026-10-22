@@ -74,34 +74,35 @@
   h1, h2, h3, button, .big { font-family: Oswald, "Arial Narrow", Impact, sans-serif; }
 
   .page { max-width: 560px; margin: 0 auto; padding-bottom: 48px; }
+  .poster-wrap { margin: 28px 0 0; }
   .poster {
     display: block;
     width: 100%;
     height: auto;
     aspect-ratio: 2 / 3;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
     background: #1b2a22;
   }
 
-  .band {
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
     background: var(--green);
     color: var(--green-ink);
-    padding: 22px 16px 24px;
-    border-top: 4px solid var(--band-accent);
+    border-bottom: 3px solid var(--band-accent);
   }
-  .band .eyebrow {
-    margin: 0 0 6px;
-    font: 600 14px/1.3 Oswald, sans-serif;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--band-accent);
-  }
-  .band h1 {
-    margin: 0 0 8px;
-    font-size: clamp(26px, 7vw, 34px);
+  .banner img { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+  .banner h1 {
+    margin: 0;
+    font-size: 21px;
     line-height: 1.1;
     font-weight: 700;
+    letter-spacing: .02em;
   }
-  .band p { margin: 0; color: rgba(255, 255, 255, .88); }
+  .banner p { margin: 2px 0 0; font-size: 14px; line-height: 1.3; color: var(--band-accent); }
 
   .wrap { padding: 0 16px; }
   .card {
@@ -414,13 +415,12 @@
 </head>
 <body>
 <main class="page">
-  <img class="poster" src="aw-poster.jpg" width="1024" height="1536"
-       alt="Affisch: After work – dags igen! En öl, goda historier och tveksamma beslut">
-
-  <header class="band">
-    <p class="eyebrow">After work</p>
-    <h1>Nästa AW – var och när?</h1>
-    <p>Föreslå ett ställe och en tid, eller säg till vilka förslag som funkar för dig.</p>
+  <header class="banner">
+    <img src="icon-192.png" width="44" height="44" alt="">
+    <div>
+      <h1>AW – var och när?</h1>
+      <p>En jävligt bra AW-app 🍺</p>
+    </div>
   </header>
 
   <div class="wrap">
@@ -472,11 +472,20 @@
       <p id="new-msg" class="msg" role="status" aria-live="polite"></p>
     </section>
 
+    <figure class="poster-wrap">
+      <img class="poster" src="aw-poster.jpg" width="1024" height="1536" loading="lazy"
+           alt="Affisch: After work – dags igen! En öl, goda historier och tveksamma beslut">
+    </figure>
+
     <p id="updated" class="updated" aria-live="polite"></p>
     <p id="admin-bar" class="updated" hidden>
-      Du är admin och kan ta bort alla förslag ·
+      Du är admin och kan ta bort alla förslag och kommentarer ·
       <button id="admin-logout" type="button" class="linkish">Logga ut som admin</button>
     </p>
+    <p id="admin-login-bar" class="updated">
+      <button id="admin-login" type="button" class="linkish">Logga in som admin</button>
+    </p>
+    <p id="admin-msg" class="msg" role="status" aria-live="polite"></p>
   </div>
 </main>
 
@@ -1148,8 +1157,9 @@
       byProposal.get(r.proposal_id).push(r);
     });
 
+    // Senast tillagda förslaget överst
     const sorted = proposals.slice().sort((a, b) =>
-      new Date(a.starts_at) - new Date(b.starts_at) || String(a.created_at).localeCompare(String(b.created_at)));
+      new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)));
     const upcoming = sorted.filter((p) => !isPast(p));
 
     const yesCount = (p) => (byProposal.get(p.id) || []).filter((r) => r.status === "yes").length;
@@ -1312,14 +1322,15 @@
     adminCode = code;
     try { code ? localStorage.setItem(ADMIN_KEY, code) : localStorage.removeItem(ADMIN_KEY); } catch (e) {}
     $("#admin-bar").hidden = !code;
+    $("#admin-login-bar").hidden = !!code;
     render();
   }
 
-  async function checkAdmin() {
+  async function checkAdmin(ask = false) {
     let code = adminCode;
-    const fromHash = location.hash === "#admin";
+    const fromHash = ask || location.hash === "#admin";
     if (fromHash) {
-      history.replaceState(null, "", location.pathname + location.search);
+      if (location.hash === "#admin") history.replaceState(null, "", location.pathname + location.search);
       code = (window.prompt("Admin-kod:") || "").trim() || null;
     }
     if (!code) { if (fromHash) setAdmin(null); return; }
@@ -1327,21 +1338,22 @@
       const ok = await api("rpc/admin_check", { method: "POST", body: { p_code: code } });
       if (ok === true) {
         setAdmin(code);
-        if (fromHash) showMsg($("#name-msg"), "Du är inloggad som admin och kan ta bort alla förslag.", "ok");
+        if (fromHash) showMsg($("#admin-msg"), "Du är inloggad som admin och kan ta bort alla förslag och kommentarer.", "ok");
       } else {
         setAdmin(null);
-        if (fromHash) showMsg($("#name-msg"), "Fel admin-kod.", "error");
+        if (fromHash) showMsg($("#admin-msg"), "Fel admin-kod.", "error");
       }
     } catch (e) {
-      if (fromHash) showMsg($("#name-msg"), errorText("Kunde inte kontrollera admin-koden", e), "error");
+      if (fromHash) showMsg($("#admin-msg"), errorText("Kunde inte kontrollera admin-koden", e), "error");
     }
   }
 
   $("#admin-logout").addEventListener("click", () => {
     setAdmin(null);
-    showMsg($("#name-msg"), "Du är utloggad som admin.", "info");
+    showMsg($("#admin-msg"), "Du är utloggad som admin.", "info");
   });
   window.addEventListener("hashchange", () => { if (location.hash === "#admin") checkAdmin(); });
+  $("#admin-login").addEventListener("click", () => checkAdmin(true));
 
   async function cleanupPast() {
     try { await api("rpc/cleanup_past_proposals", { method: "POST", body: {}, prefer: "return=minimal" }); }
@@ -1353,6 +1365,7 @@
     render();
   } else {
     $("#admin-bar").hidden = !adminCode;
+    $("#admin-login-bar").hidden = !!adminCode;
     checkAdmin();
     cleanupPast().then(refresh);
     refresh();

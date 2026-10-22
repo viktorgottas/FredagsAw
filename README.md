@@ -58,6 +58,7 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   blir det nya svar (de gamla kan då inte ändras därifrån).
 - Tider tolkas och visas alltid i svensk tid. Förslag ligger kvar hela sin dag och tas sedan bort
   automatiskt (sidan anropar `cleanup_past_proposals()` när någon öppnar den; svaren följer med).
+- Senast tillagda förslaget visas överst.
 - Förslaget med flest "kommer" får etiketten **Flest kommer**, och förslag som tillkommit sedan
   ditt förra besök märks **Nytt**.
 - Varje förslag har knapparna **Dela** (delningsmenyn i mobilen, eller kopiera länk), **Kalender**
@@ -77,8 +78,8 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
    values (encode(sha256(convert_to('HEMLIG-KOD', 'UTF8')), 'hex'));
    ```
 
-2. Öppna sidan med `#admin` i slutet av adressen, t.ex. `https://<användarnamn>.github.io/<repo>/#admin`,
-   och skriv in koden. Webbläsaren kommer ihåg den; "Logga ut som admin" finns längst ner.
+2. Tryck **Logga in som admin** längst ner på sidan (eller öppna sidan med `#admin` i slutet av
+   adressen) och skriv in koden. Webbläsaren kommer ihåg den; "Logga ut som admin" finns längst ner.
 3. Byta kod: `delete from public.aw_admin;` och lägg in en ny enligt steg 1.
 
 Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
