@@ -1701,7 +1701,10 @@
     // Billigaste ölen: billigast först, vid lika pris det senast rapporterade
     const cheap = Array.from(prices.values())
       .sort((a, b) => a.price - b.price || new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);
-    const key = JSON.stringify([rows, cheap.map((c) => [c.place, c.price])]);
+    // Dyraste ölen: dyrast först
+    const pricey = Array.from(prices.values())
+      .sort((a, b) => b.price - a.price || new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);
+    const key = JSON.stringify([rows, cheap.map((c) => [c.place, c.price]), pricey.map((c) => c.place)]);
     if (key === statsKey) return;
     statsKey = key;
     const lists = [
@@ -1729,21 +1732,25 @@
       col.append(ol);
       body.append(col);
     });
-    if (cheap.length) {
+    const priceList = (title, list, icons) => {
+      if (!list.length) return;
       any = true;
       const col = el("div");
-      col.append(el("h3", null, "Billigaste ölen 🍺"));
+      col.append(el("h3", null, title));
       const ol = el("ol");
-      cheap.forEach((c, i) => {
+      list.forEach((c, i) => {
         const li = el("li");
         const who = el("span", "who", c.place);
         who.title = "Enligt " + c.reported_by + ", " + priceAge(c.updated_at);
-        li.append(el("span", null, medals[i] || "·"), who, el("span", "num", c.price + " kr"));
+        li.append(el("span", null, icons[i] || "·"), who, el("span", "num", c.price + " kr"));
         ol.append(li);
       });
       col.append(ol);
       body.append(col);
-    }
+    };
+    priceList("Billigaste ölen 🍺", cheap, medals);
+    // Dyraste visas först när det finns minst två priser (annars blir det samma ställe i båda)
+    if (prices.size >= 2) priceList("Dyraste ölen 💸", pricey, ["💸", "💰", "🤑", "4.", "5."]);
     $("#stats").hidden = !any;
   }
 
