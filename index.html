@@ -552,8 +552,9 @@
       <p id="new-msg" class="msg" role="status" aria-live="polite"></p>
     </section>
 
-    <section class="card" aria-labelledby="sub-heading">
-      <h2 id="sub-heading">Få mejl om nya AW:er</h2>
+    <section class="card install" aria-labelledby="sub-heading">
+      <h2 id="sub-heading">Håll dig uppdaterad</h2>
+      <h3>Mejl</h3>
       <p class="lead">Ett mejl när en ny AW föreslås eller när tid eller plats ändras. Inget annat.</p>
       <form id="sub-form" class="comment-form" novalidate>
         <input id="sub-email" type="email" maxlength="254" autocomplete="email" inputmode="email"
@@ -561,6 +562,18 @@
         <button id="sub-submit" type="submit">Prenumerera</button>
       </form>
       <p id="sub-msg" class="msg" role="status" aria-live="polite"></p>
+
+      <h3 id="kalender">Kalender</h3>
+      <p class="lead">Lägg in AW-kalendern en gång – nya förslag dyker upp av sig själva, och ändrad tid
+        eller plats uppdateras automatiskt.</p>
+      <div class="actions">
+        <a id="feed-apple" class="action">iPhone / Mac</a>
+        <a id="feed-google" class="action" target="_blank" rel="noopener">Google</a>
+        <a id="feed-outlook" class="action" target="_blank" rel="noopener">Outlook</a>
+        <button id="feed-copy" type="button" class="action">Kopiera länk</button>
+      </div>
+      <p class="hint">Google Kalender hämtar uppdateringar bara några gånger per dygn; iPhone och Outlook oftare.</p>
+      <p id="feed-msg" class="msg" role="status" aria-live="polite"></p>
     </section>
 
     <section id="install" class="card install" aria-labelledby="install-heading">
@@ -1697,7 +1710,7 @@
       input.value = "";
       showMsg(msgNode, res === "redan"
         ? "Den adressen prenumererar redan. 👍"
-        : "Klart! Du får ett mejl när en ny AW föreslås eller tid/plats ändras. Varje mejl har en avregistreringslänk.", "ok");
+        : "Klart! Du får ett mejl när en ny AW föreslås eller tid/plats ändras. Lägg gärna in kalendern nedan också.", "ok");
     } catch (e) {
       if (e instanceof ApiError && e.detail.code === "22023") showMsg(msgNode, "Skriv en giltig e-postadress.", "error");
       else if (e instanceof ApiError && (e.detail.code === "PGRST202" || e.status === 404))
@@ -1708,6 +1721,22 @@
     }
   }
   $("#sub-form").addEventListener("submit", subscribe);
+
+  // ---------- Kalenderprenumeration ----------
+  const FEED_HTTPS = ICS_FUNCTION;
+  const FEED_WEBCAL = FEED_HTTPS.replace(/^https?:/, "webcal:");
+  $("#feed-apple").href = FEED_WEBCAL;
+  $("#feed-google").href = "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(FEED_WEBCAL);
+  $("#feed-outlook").href = "https://outlook.live.com/calendar/0/addfromweb?url=" +
+    encodeURIComponent(FEED_HTTPS) + "&name=" + encodeURIComponent("AW");
+  $("#feed-copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(FEED_HTTPS);
+      showMsg($("#feed-msg"), "Länken är kopierad. Lägg till den som prenumererad kalender (”från URL”) i din kalenderapp.", "ok");
+    } catch (e) {
+      window.prompt("Kopiera kalenderlänken:", FEED_HTTPS);
+    }
+  });
 
   async function handleUnsubscribe() {
     const params = new URLSearchParams(location.search);

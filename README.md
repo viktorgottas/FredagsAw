@@ -73,10 +73,17 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
-## Kalender för iPhone/Mac (Edge Function)
+## Kalender (Edge Function)
 
-Safari kan inte öppna kalenderfiler som skapas i sidan, så "iPhone / Apple" hämtar dem från
-en liten Supabase-funktion:
+Funktionen `aw-ics` ger två saker:
+
+- `…/functions/v1/aw-ics?id=<id>` – ett förslag som kalenderfil ("Kalender → iPhone / Apple";
+  Safari kan inte öppna kalenderfiler som skapas i sidan).
+- `…/functions/v1/aw-ics` – en **prenumerationskalender** med alla kommande förslag. Under
+  "Håll dig uppdaterad → Kalender" finns knappar för iPhone/Mac (`webcal://`), Google och Outlook.
+  Nya förslag dyker upp automatiskt och ändrad tid/plats uppdateras.
+
+Installera/uppdatera funktionen:
 
 1. Supabase → **Edge Functions** → **Deploy a new function** → **Via Editor**.
 2. Döp den till `aw-ics`, ersätt koden med innehållet i

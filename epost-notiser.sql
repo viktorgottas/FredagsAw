@@ -235,6 +235,9 @@ begin
     perform aw_send_mail(e, 'Du prenumererar på AW-appen',
       '<h2>Välkommen!</h2><p>Du får ett mejl när en ny AW föreslås eller när tid eller plats ändras.</p>'
       || '<p><a href="' || aw_html(aw_setting('site_url')) || '">Öppna AW-appen</a></p>'
+      || '<p>Tips: lägg in AW-kalendern i din iPhone-, Google- eller Outlook-kalender, så dyker '
+      || 'alla AW:er upp där automatiskt: <a href="' || aw_html(aw_setting('site_url')) || '#kalender">'
+      || 'Lägg till kalendern</a></p>'
       || '<p style="font-size:13px;color:#55665d">Var det inte du som anmälde dig? '
       || '<a href="' || aw_html(aw_setting('site_url')) || '?avregistrera=' || tok || '">Avregistrera</a></p>');
   end if;
