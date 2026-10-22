@@ -76,7 +76,7 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   när minst två har svarat ja. Alla ser samma namn; admin kan slumpa om.
 - **Hemlig plats 🤫**: kryssa i "Hemlig plats" och välj när den avslöjas. Platsen ligger i
   `secret_place` som inte går att läsa via API:t, och avslöjas av `aw_reveal_due()` (pg_cron varje
-  minut, och när någon öppnar sidan). Prenumeranter får mejl både när den läggs upp och när den avslöjas.
+  minut, och när någon öppnar sidan). Prenumeranter får mejl både när den läggs upp och när den avslöjas – utan platsen, den syns bara i appen.
 - **Bilder 📸** kan läggas upp från att AW:n börjat (skalas ner till max 1600 px JPEG, platsdata tas
   bort). Filerna ligger i Storage-bucketen `aw-photos`; borttagna bilder döljs men filen ligger kvar
   i Storage tills du tar bort den där.

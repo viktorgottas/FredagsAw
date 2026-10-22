@@ -180,10 +180,16 @@ begin
          || case when new.note is not null then '<p>' || aw_html(new.note) || '</p>' else '' end
          || '<p>Säg till i appen om du kommer!</p>';
   elsif tg_op = 'UPDATE' and old.reveal_at is not null and new.reveal_at is null then
-    subject := '🤫 Avslöjat: AW på ' || new.place || ', ' || aw_format_time(new.starts_at);
-    html := '<h2>Platsen är avslöjad! 🎉</h2>'
-         || '<p><b>' || aw_html(new.place) || '</b><br>' || aw_html(aw_format_time(new.starts_at)) || '</p>'
-         || '<p>Vi ses där!</p>';
+    -- Platsen står INTE i mejlet: man måste in i appen för att se den.
+    subject := '🤫 Platsen är avslöjad! AW ' || aw_format_time(new.starts_at);
+    html := '<h2>Platsen är avslöjad! 🤫</h2>'
+         || '<p>Platsen för AW:n ' || aw_html(aw_format_time(new.starts_at)) || ' är nu avslöjad – '
+         || 'men bara i AW-appen.</p>'
+         || case when site is not null then
+              '<p><a href="' || aw_html(site) || '#forslag-' || new.id || '" '
+              || 'style="display:inline-block;padding:10px 18px;background:#2a2147;color:#fff;'
+              || 'border-radius:8px;text-decoration:none;font-weight:bold">Se var det blir</a></p>'
+            else '' end;
   elsif tg_op = 'INSERT' then
     subject := 'Ny AW: ' || new.place || ', ' || aw_format_time(new.starts_at);
     html := '<h2>' || aw_html(new.created_by) || ' föreslår en AW</h2>'
