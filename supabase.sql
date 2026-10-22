@@ -106,5 +106,51 @@ $$;
 revoke all on function public.cleanup_past_proposals() from public, anon, authenticated;
 grant execute on function public.cleanup_past_proposals() to anon;
 
+-- ---------- Admin ----------
+-- Den som har admin-koden kan ta bort vilket förslag som helst.
+-- Koden lagras som SHA-256-hash och tabellen går inte att läsa via API:t.
+-- Lägg in en kod (kör separat i SQL Editor, byt HEMLIG-KOD mot din egen):
+--   insert into public.aw_admin (code_hash)
+--   values (encode(sha256(convert_to('HEMLIG-KOD', 'UTF8')), 'hex'));
+create table if not exists public.aw_admin (
+  code_hash  text        primary key,
+  created_at timestamptz not null default now()
+);
+alter table public.aw_admin enable row level security;
+revoke all on public.aw_admin from anon, authenticated;
+
+create or replace function public.admin_check(p_code text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.aw_admin
+    where code_hash = encode(sha256(convert_to(coalesce(p_code, ''), 'UTF8')), 'hex')
+  )
+$$;
+
+create or replace function public.admin_delete_proposal(p_id uuid, p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.admin_check(p_code) then
+    raise exception 'Fel admin-kod' using errcode = '42501';
+  end if;
+  delete from public.aw_proposal where id = p_id;
+  return found;
+end
+$$;
+
+revoke all on function public.admin_check(text)                 from public, anon, authenticated;
+revoke all on function public.admin_delete_proposal(uuid, text) from public, anon, authenticated;
+grant execute on function public.admin_check(text)                 to anon;
+grant execute on function public.admin_delete_proposal(uuid, text) to anon;
+
 -- Gamla svar från första versionen (utan förslag) visas inte längre.
 -- Vill du städa bort dem: delete from public.rsvp where proposal_id is null;

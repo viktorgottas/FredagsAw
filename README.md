@@ -66,6 +66,21 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
+## Admin: ta bort vilket förslag som helst
+
+1. Lägg in en admin-kod i Supabase (SQL Editor, byt `HEMLIG-KOD` mot din egen):
+
+   ```sql
+   insert into public.aw_admin (code_hash)
+   values (encode(sha256(convert_to('HEMLIG-KOD', 'UTF8')), 'hex'));
+   ```
+
+2. Öppna sidan med `#admin` i slutet av adressen, t.ex. `https://<användarnamn>.github.io/<repo>/#admin`,
+   och skriv in koden. Webbläsaren kommer ihåg den; "Logga ut som admin" finns längst ner.
+3. Byta kod: `delete from public.aw_admin;` och lägg in en ny enligt steg 1.
+
+Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
+
 ## Rensa efteråt
 
 Ta bort allt: kör `delete from public.aw_proposal; delete from public.rsvp;` i SQL Editor.

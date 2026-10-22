@@ -437,6 +437,10 @@
     </section>
 
     <p id="updated" class="updated" aria-live="polite"></p>
+    <p id="admin-bar" class="updated" hidden>
+      Du är admin och kan ta bort alla förslag ·
+      <button id="admin-logout" type="button" class="linkish">Logga ut som admin</button>
+    </p>
   </div>
 </main>
 
@@ -447,6 +451,7 @@
   // =========================================================================
 
   const STORAGE_KEY = "aw-sida-v2";
+  const ADMIN_KEY = "aw-sida-admin";
   const OLD_STORAGE_KEY = "fredagsaw-2026-10-16";
   const REFRESH_MS = 10000;
   const TZ = "Europe/Stockholm";
@@ -737,10 +742,16 @@
     setCardBusy(card, true);
     showMsg(card.refs.msg, "Tar bort förslaget …", "info");
     try {
-      const rows = await api("aw_proposal?id=eq." + encodeURIComponent(p.id) + "&select=id", {
-        method: "DELETE", withToken: true, prefer: "return=representation"
-      });
-      if (!rows || !rows.length) {
+      let removed;
+      if (adminCode) {
+        removed = await api("rpc/admin_delete_proposal", { method: "POST", body: { p_id: p.id, p_code: adminCode } });
+      } else {
+        const rows = await api("aw_proposal?id=eq." + encodeURIComponent(p.id) + "&select=id", {
+          method: "DELETE", withToken: true, prefer: "return=representation"
+        });
+        removed = !!(rows && rows.length);
+      }
+      if (!removed) {
         showMsg(card.refs.msg, "Bara den som lade förslaget (från samma webbläsare) kan ta bort det.", "error");
         return;
       }
@@ -961,7 +972,7 @@
     });
 
     refs.removeRsvp.hidden = !mine;
-    refs.removeProposal.hidden = !me.proposals.includes(p.id);
+    refs.removeProposal.hidden = !(adminCode || me.proposals.includes(p.id));
   }
 
   function render() {
@@ -1113,6 +1124,46 @@
     $("#" + id).addEventListener("input", (e) => e.target.removeAttribute("aria-invalid")));
   $("#new-form").addEventListener("submit", addProposal);
 
+  // ---------- Admin ----------
+  // Öppna sidan med #admin för att logga in med admin-koden.
+  let adminCode = null;
+  try { adminCode = localStorage.getItem(ADMIN_KEY) || null; } catch (e) {}
+
+  function setAdmin(code) {
+    adminCode = code;
+    try { code ? localStorage.setItem(ADMIN_KEY, code) : localStorage.removeItem(ADMIN_KEY); } catch (e) {}
+    $("#admin-bar").hidden = !code;
+    render();
+  }
+
+  async function checkAdmin() {
+    let code = adminCode;
+    const fromHash = location.hash === "#admin";
+    if (fromHash) {
+      history.replaceState(null, "", location.pathname + location.search);
+      code = (window.prompt("Admin-kod:") || "").trim() || null;
+    }
+    if (!code) { if (fromHash) setAdmin(null); return; }
+    try {
+      const ok = await api("rpc/admin_check", { method: "POST", body: { p_code: code } });
+      if (ok === true) {
+        setAdmin(code);
+        if (fromHash) showMsg($("#name-msg"), "Du är inloggad som admin och kan ta bort alla förslag.", "ok");
+      } else {
+        setAdmin(null);
+        if (fromHash) showMsg($("#name-msg"), "Fel admin-kod.", "error");
+      }
+    } catch (e) {
+      if (fromHash) showMsg($("#name-msg"), errorText("Kunde inte kontrollera admin-koden", e), "error");
+    }
+  }
+
+  $("#admin-logout").addEventListener("click", () => {
+    setAdmin(null);
+    showMsg($("#name-msg"), "Du är utloggad som admin.", "info");
+  });
+  window.addEventListener("hashchange", () => { if (location.hash === "#admin") checkAdmin(); });
+
   async function cleanupPast() {
     try { await api("rpc/cleanup_past_proposals", { method: "POST", body: {}, prefer: "return=minimal" }); }
     catch (e) { /* funktionen saknas (gammal SQL) eller nätfel – inget att visa */ }
@@ -1122,6 +1173,8 @@
     $("#config-notice").hidden = false;
     render();
   } else {
+    $("#admin-bar").hidden = !adminCode;
+    checkAdmin();
     cleanupPast().then(refresh);
     refresh();
     setInterval(() => { if (!document.hidden && !busy) refresh(); }, REFRESH_MS);
