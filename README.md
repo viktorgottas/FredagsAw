@@ -158,6 +158,11 @@ Mejltjänst – välj en:
    on conflict (key) do update set value = excluded.value;
    ```
 
+**Påminnelse samma dag:** kl. 12 (svensk tid) samma dag som en AW får du och prenumeranterna ett
+mejl med tid, plats (inte för hemliga platser), vilka som kommer och vem som bjuder. Körs av pg_cron
+var 15:e minut (`aw_send_reminders`). Byt tid: `reminder_hour` i `aw_settings`. Kontrollera att
+schemat finns: `select jobname, schedule from cron.job;`
+
 Se prenumeranter: `select email, created_at from public.aw_subscriber;`
 Stänga av alla mejl: `delete from public.aw_settings where key in ('brevo_api_key', 'resend_api_key');`
 

@@ -1183,11 +1183,12 @@
     "&hourly=temperature_2m,precipitation_probability,weather_code&timezone=Europe%2FStockholm&forecast_days=16";
   let weather = null;      // { "2026-10-30T17:00": { t, rain, code } }
   let weatherLoadedAt = 0;
+  let weatherState = "loading"; // loading | ok | error
   async function loadWeather() {
     weatherLoadedAt = Date.now();
     try {
-      const res = await fetch(WEATHER_URL);
-      if (!res.ok) return;
+      const res = await fetch(WEATHER_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const h = (await res.json()).hourly || {};
       const codes = h.weather_code || h.weathercode || [];
       const map = {};
@@ -1195,8 +1196,12 @@
         map[t] = { t: h.temperature_2m[i], rain: (h.precipitation_probability || [])[i], code: codes[i] };
       });
       weather = map;
-      render();
-    } catch (e) { /* väder är en bonus – visa inget om det inte går */ }
+      weatherState = "ok";
+    } catch (e) {
+      if (!weather) weatherState = "error";
+      weatherLoadedAt = Date.now() - 25 * 60 * 1000; // försök igen om ca 5 min
+    }
+    render();
   }
   const WMO = [
     [[0], "☀️", "Klart"], [[1], "🌤️", "Mest klart"], [[2], "⛅", "Halvklart"], [[3], "☁️", "Mulet"],
@@ -1206,12 +1211,20 @@
     [[85, 86], "🌨️", "Snöbyar"], [[95], "⛈️", "Åska"], [[96, 99], "⛈️", "Åska med hagel"]
   ];
   function weatherText(p) {
-    if (!weather) return "";
     const start = new Date(p.starts_at).getTime();
     if (start < Date.now() - 3600e3) return "";
+    if (!weather) {
+      return weatherState === "error"
+        ? { text: "🌡️ Kunde inte hämta väder just nu", tip: "" }
+        : { text: "🌡️ Hämtar väder …", tip: "" };
+    }
     const { date, time } = stockholmParts(p.starts_at);
     const w = weather[date + "T" + time.slice(0, 2) + ":00"];
-    if (!w || w.t == null) return "";
+    if (!w || w.t == null) {
+      return start > Date.now() + 15 * 864e5
+        ? { text: "🌡️ Väderprognosen dyker upp när det är max 16 dagar kvar", tip: "" }
+        : "";
+    }
     const [, icon, label] = WMO.find(([codes]) => codes.includes(w.code)) || [null, "🌡️", ""];
     let text = icon + " " + Math.round(w.t) + "°" + (label ? " " + label.toLowerCase() : "");
     const snowy = [71, 73, 75, 77, 85, 86].includes(w.code);

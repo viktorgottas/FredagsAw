@@ -24,6 +24,9 @@
 --   on conflict (key) do update set value = excluded.value;
 --
 -- Stänga av alla mejl: delete from public.aw_settings where key in ('brevo_api_key', 'resend_api_key');
+-- Påminnelse samma dag: kl. 12 som standard. Ändra t.ex. till 14:
+--   insert into public.aw_settings (key, value) values ('reminder_hour', '14')
+--   on conflict (key) do update set value = excluded.value;
 
 create extension if not exists pg_net with schema extensions;
 
@@ -228,6 +231,87 @@ create trigger aw_proposal_changed_notify after update on public.aw_proposal
 drop trigger if exists aw_comment_notify on public.aw_comment;
 create trigger aw_comment_notify after insert on public.aw_comment
   for each row execute function public.aw_notify_email();
+
+-- ---------- Påminnelse samma dag ----------
+-- Kl. 12 (svensk tid, ändra med inställningen reminder_hour) samma dag som en AW går ett mejl
+-- till dig och prenumeranterna. Körs av pg_cron var 15:e minut; varje AW påminns bara en gång.
+alter table public.aw_proposal add column if not exists reminder_sent_at timestamptz;
+
+create or replace function public.aw_send_reminders()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  local_now timestamp := now() at time zone 'Europe/Stockholm';
+  hour_setting int := coalesce(nullif(aw_setting('reminder_hour'), '')::int, 12);
+  site  text := aw_setting('site_url');
+  p     record;
+  who   text;
+  n     int;
+  subject text;
+  html    text;
+  sent  int := 0;
+begin
+  if extract(hour from local_now) < hour_setting then
+    return 0;
+  end if;
+  for p in
+    select * from aw_proposal
+     where reminder_sent_at is null
+       and (starts_at at time zone 'Europe/Stockholm')::date = local_now::date
+       and starts_at > now()
+       -- förslag som lades in efter påminnelsetiden har just fått "Ny AW"-mejlet
+       and created_at < (local_now::date + make_interval(hours => hour_setting)) at time zone 'Europe/Stockholm'
+     order by starts_at
+     for update skip locked
+  loop
+    select count(*), string_agg(name, ', ' order by created_at) into n, who
+      from rsvp where proposal_id = p.id and status = 'yes';
+
+    if p.reveal_at is not null then
+      subject := '⏰ I dag: hemlig AW kl. ' || to_char(p.starts_at at time zone 'Europe/Stockholm', 'HH24.MI') || ' 🤫';
+      html := '<h2>I dag är det AW! 🤫</h2>'
+           || '<p><b>Hemligt ställe</b>, kl. ' || to_char(p.starts_at at time zone 'Europe/Stockholm', 'HH24.MI') || '<br>'
+           || 'Platsen avslöjas i appen kl. ' || to_char(p.reveal_at at time zone 'Europe/Stockholm', 'HH24.MI') || '.</p>';
+    else
+      subject := '⏰ I dag: AW på ' || p.place || ' kl. ' || to_char(p.starts_at at time zone 'Europe/Stockholm', 'HH24.MI');
+      html := '<h2>I dag är det AW! 🍻</h2>'
+           || '<p><b>' || aw_html(p.place) || '</b>, kl. '
+           || to_char(p.starts_at at time zone 'Europe/Stockholm', 'HH24.MI') || '</p>';
+    end if;
+    html := html
+         || case when n > 0 then '<p>' || n || ' kommer: ' || aw_html(who) || '</p>'
+                 else '<p>Ingen har svarat ja än – bli först!</p>' end
+         || case when p.buyer_name is not null
+                 then '<p>🍺 ' || aw_html(p.buyer_name) || ' bjuder på första rundan.</p>' else '' end
+         || case when p.note is not null then '<p>' || aw_html(p.note) || '</p>' else '' end
+         || '<p>Har du inte svarat? Säg till i appen!</p>';
+
+    perform aw_send_mail(aw_setting('notify_email'), subject,
+      html || case when site is not null
+                   then '<p><a href="' || aw_html(site) || '#forslag-' || p.id || '">Öppna AW-appen</a></p>' else '' end);
+    perform aw_mail_subscribers(subject, html);
+    update aw_proposal set reminder_sent_at = now() where id = p.id;
+    sent := sent + 1;
+  end loop;
+  return sent;
+end
+$$;
+revoke all on function public.aw_send_reminders() from public, anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('aw-reminders', '*/15 * * * *', 'select public.aw_send_reminders()');
+  else
+    raise notice 'pg_cron saknas – aktivera det under Database → Extensions och kör filen igen.';
+  end if;
+exception when others then
+  raise notice 'Kunde inte schemalägga påminnelser: %', sqlerrm;
+end
+$$;
 
 -- ---------- Prenumerera / avregistrera (anropas från sidan) ----------
 create or replace function public.aw_subscribe(p_email text)
