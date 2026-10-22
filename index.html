@@ -837,10 +837,12 @@
   let comments = [];
   let photos = [];
   let photosAvailable = false;
-  let extrasAvailable = true; // kolumnerna buyer_name/reveal_at finns (ny SQL körd)
+  // Kolumner att hämta – trappas ner om databasen saknar de nyaste (SQL inte körd än)
   const BASIC_COLS = "id,place,starts_at,note,created_by,created_at";
-  const EXTRA_COLS = BASIC_COLS + ",buyer_name,reveal_at";
-  const proposalCols = () => (extrasAvailable ? EXTRA_COLS : BASIC_COLS);
+  const COL_LEVELS = [BASIC_COLS + ",buyer_name,reveal_at,buyer_pool", BASIC_COLS + ",buyer_name,reveal_at", BASIC_COLS];
+  let colLevel = 0;
+  let extrasAvailable = true; // buyer_name/reveal_at finns
+  const proposalCols = () => COL_LEVELS[colLevel];
   const memCards = new Map(); // proposalId -> minneskort
   let commentsAvailable = true;
   let busy = 0;
@@ -1262,7 +1264,8 @@
     const names = rsvps.filter((r) => r.proposal_id === p.id && r.status === "yes").map((r) => r.name);
     if (!names.length) return;
     card.drawing = true;
-    b.drawBtn.disabled = b.redrawBtn.disabled = true;
+    b.drawBtn.disabled = b.redrawBtn.disabled = b.newBtn.disabled = true;
+    b.newBtn.hidden = true;
     b.drawBtn.hidden = true;
     b.result.hidden = false;
     b.name.classList.add("spinning");
@@ -1283,14 +1286,14 @@
     });
     b.name.classList.remove("spinning");
     card.drawing = false;
-    b.drawBtn.disabled = b.redrawBtn.disabled = false;
+    b.drawBtn.disabled = b.redrawBtn.disabled = b.newBtn.disabled = false;
     if (failed) {
       showMsg(card.refs.msg, errorText("Kunde inte slumpa", failed), "error");
       b.result.hidden = true;
       b.drawBtn.hidden = false;
       return;
     }
-    proposals = proposals.map((x) => (x.id === p.id ? { ...x, buyer_name: answer } : x));
+    proposals = proposals.map((x) => (x.id === p.id ? { ...x, buyer_name: answer, buyer_pool: names } : x));
     b.name.textContent = answer;
     confetti(18);
     render();
@@ -1964,6 +1967,10 @@
     buyer.clearBtn.addEventListener("click", () => adminClearBuyer(currentProposal(p.id), card));
     buyer.admin.append(buyer.redrawBtn, buyer.clearBtn);
     buyer.result.append(buyer.admin);
+    buyer.newBtn = el("button", "secondary draw-btn");
+    buyer.newBtn.type = "button";
+    buyer.newBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card));
+    buyer.result.append(buyer.newBtn);
     buyer.drawBtn = el("button", "secondary draw-btn", "🎲 Vem bjuder på första rundan?");
     buyer.drawBtn.type = "button";
     buyer.drawBtn.addEventListener("click", () => drawBuyer(currentProposal(p.id), card));
@@ -2069,6 +2076,10 @@
       b.result.hidden = !p.buyer_name;
       b.name.textContent = p.buyer_name || "";
       b.admin.hidden = !adminCode;
+      const pool = Array.isArray(p.buyer_pool) ? p.buyer_pool : null;
+      const newcomers = p.buyer_name && pool ? by.yes.filter((r) => !pool.includes(r.name)).length : 0;
+      b.newBtn.hidden = !newcomers;
+      b.newBtn.textContent = "🎲 " + newcomers + (newcomers === 1 ? " ny" : " nya") + " sedan slumpningen – slumpa om!";
     }
 
     // Bilder: från och med att AW:n har börjat
@@ -2279,14 +2290,20 @@
     const seq = ++listSeq;
     const updated = $("#updated");
     try {
-      const getProposals = () => api("aw_proposal?select=" + proposalCols() + "&order=starts_at.asc").catch((e) => {
-        // Ny SQL inte körd än: hämta utan de nya kolumnerna
-        if (e instanceof ApiError && (e.detail.code === "42703" || e.detail.code === "42501")) {
-          extrasAvailable = false;
-          return api("aw_proposal?select=" + BASIC_COLS + "&order=starts_at.asc");
+      const getProposals = async () => {
+        for (;;) {
+          try { return await api("aw_proposal?select=" + proposalCols() + "&order=starts_at.asc"); }
+          catch (e) {
+            // Ny SQL inte körd än: försök med färre kolumner
+            if (e instanceof ApiError && (e.detail.code === "42703" || e.detail.code === "42501") && colLevel < COL_LEVELS.length - 1) {
+              colLevel++;
+              extrasAvailable = colLevel < COL_LEVELS.length - 1;
+              continue;
+            }
+            throw e;
+          }
         }
-        throw e;
-      });
+      };
       const [ps, rs, cs, phs] = await Promise.all([
         getProposals(),
         api("rsvp?select=id,proposal_id,name,status,created_at&proposal_id=not.is.null&order=created_at.asc"),

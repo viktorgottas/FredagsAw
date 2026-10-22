@@ -17,6 +17,7 @@ create table if not exists public.aw_proposal (
 alter table public.aw_proposal add column if not exists buyer_name   text;
 alter table public.aw_proposal add column if not exists secret_place text;
 alter table public.aw_proposal add column if not exists reveal_at    timestamptz;
+alter table public.aw_proposal add column if not exists buyer_pool   text[];  -- vilka som var med när det slumpades
 alter table public.aw_proposal drop constraint if exists aw_proposal_secret_check;
 alter table public.aw_proposal add constraint aw_proposal_secret_check check (
   (secret_place is null) = (reveal_at is null)
@@ -92,7 +93,7 @@ create policy "ta bort med rätt token" on public.rsvp
 -- annars kunde vem som helst hämta andras token och ändra deras svar.
 revoke all on public.aw_proposal from anon, authenticated;
 -- secret_place går att skriva men inte läsa: den hemliga platsen syns först när den avslöjas.
-grant select (id, place, starts_at, note, created_by, created_at, buyer_name, reveal_at) on public.aw_proposal to anon;
+grant select (id, place, starts_at, note, created_by, created_at, buyer_name, reveal_at, buyer_pool) on public.aw_proposal to anon;
 grant insert (place, starts_at, note, created_by, token, secret_place, reveal_at)        on public.aw_proposal to anon;
 grant update (place, starts_at, note)                            on public.aw_proposal to anon;
 grant delete                                                     on public.aw_proposal to anon;
@@ -281,24 +282,30 @@ set search_path = public
 as $$
 declare
   current_buyer text;
+  pool text[];
+  yes_names text[];
+  is_admin boolean := admin_check(p_code);
+  newcomers boolean;
   pick text;
 begin
-  select buyer_name into current_buyer from aw_proposal where id = p_id for update;
+  select buyer_name, buyer_pool into current_buyer, pool from aw_proposal where id = p_id for update;
   if not found then
     raise exception 'Förslaget finns inte' using errcode = '23503';
   end if;
-  if current_buyer is not null and not admin_check(p_code) then
+  select coalesce(array_agg(name), '{}') into yes_names from rsvp where proposal_id = p_id and status = 'yes';
+  -- Nya som kommer sedan förra slumpningen? Då får vem som helst slumpa om.
+  newcomers := current_buyer is not null and pool is not null
+               and exists (select 1 from unnest(yes_names) n where not (n = any(pool)));
+  if current_buyer is not null and not is_admin and not newcomers then
     return current_buyer;
   end if;
-  select name into pick from rsvp
-   where proposal_id = p_id and status = 'yes'
-     and (current_buyer is null or name <> current_buyer
-          or (select count(*) from rsvp where proposal_id = p_id and status = 'yes') = 1)
+  select n into pick from unnest(yes_names) n
+   where newcomers or current_buyer is null or n <> current_buyer or cardinality(yes_names) = 1
    order by random() limit 1;
   if pick is null then
     raise exception 'Ingen har svarat kommer än' using errcode = '22023';
   end if;
-  update aw_proposal set buyer_name = pick where id = p_id;
+  update aw_proposal set buyer_name = pick, buyer_pool = yes_names where id = p_id;
   return pick;
 end
 $$;
@@ -316,7 +323,7 @@ begin
   end if;
   delete from rsvp where id = p_id returning * into r;
   if r.id is null then return false; end if;
-  update aw_proposal set buyer_name = null
+  update aw_proposal set buyer_name = null, buyer_pool = null
    where id = r.proposal_id and buyer_name = r.name
      and not exists (select 1 from rsvp x where x.proposal_id = r.proposal_id and x.status = 'yes' and x.name = r.name);
   return true;
@@ -334,7 +341,7 @@ begin
   if not admin_check(p_code) then
     raise exception 'Fel admin-kod' using errcode = '42501';
   end if;
-  update aw_proposal set buyer_name = null where id = p_id;
+  update aw_proposal set buyer_name = null, buyer_pool = null where id = p_id;
   return found;
 end
 $$;
@@ -345,6 +352,12 @@ grant execute on function public.admin_clear_buyer(uuid, text) to anon;
 
 revoke all on function public.aw_draw_buyer(uuid, text) from public, anon, authenticated;
 grant execute on function public.aw_draw_buyer(uuid, text) to anon;
+
+-- Slumpningar gjorda innan buyer_pool fanns: räkna nuvarande deltagare som med i dragningen.
+update public.aw_proposal p
+   set buyer_pool = (select coalesce(array_agg(name), '{}') from public.rsvp r
+                      where r.proposal_id = p.id and r.status = 'yes')
+ where buyer_name is not null and buyer_pool is null;
 
 -- ---------- Topplista ----------
 create or replace function public.aw_stats()

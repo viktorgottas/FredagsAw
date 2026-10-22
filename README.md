@@ -77,7 +77,8 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
 - **🎲 Slumpa** bredvid "Var?" slumpar en bar från listan `BARS` i `index.html` plus ställen ni
   redan föreslagit. Ändra listan fritt.
 - **Vem bjuder på första rundan?** slumpas (i databasen, `aw_draw_buyer`) bland dem som kommer,
-  när minst två har svarat ja. Alla ser samma namn; admin kan slumpa om.
+  när minst två har svarat ja. Alla ser samma namn. Kommer nya personer efter slumpningen kan vem
+  som helst slumpa om (bland alla som kommer); annars kan bara admin slumpa om.
 - **Hemlig plats 🤫**: kryssa i "Hemlig plats" och välj när den avslöjas. Platsen ligger i
   `secret_place` som inte går att läsa via API:t, och avslöjas av `aw_reveal_due()` (pg_cron varje
   minut, och när någon öppnar sidan). Prenumeranter får mejl både när den läggs upp och när den avslöjas – utan platsen, den syns bara i appen.
