@@ -1704,7 +1704,18 @@
     // Dyraste ölen: dyrast först
     const pricey = Array.from(prices.values())
       .sort((a, b) => b.price - a.price || new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);
-    const key = JSON.stringify([rows, cheap.map((c) => [c.place, c.price]), pricey.map((c) => c.place)]);
+    // Pratkvarnar: flest kommentarer (samma namn oavsett stora/små bokstäver)
+    const talk = new Map();
+    comments.forEach((c) => {
+      const k = c.name.trim().toLowerCase();
+      const cur = talk.get(k) || { name: c.name.trim(), n: 0 };
+      cur.n++;
+      talk.set(k, cur);
+    });
+    const talkers = Array.from(talk.values())
+      .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "sv")).slice(0, 5);
+    const key = JSON.stringify([rows, cheap.map((c) => [c.place, c.price]), pricey.map((c) => c.place),
+      talkers.map((t) => [t.name, t.n])]);
     if (key === statsKey) return;
     statsKey = key;
     const lists = [
@@ -1732,6 +1743,20 @@
       col.append(ol);
       body.append(col);
     });
+    if (talkers.length) {
+      any = true;
+      const col = el("div");
+      col.append(el("h3", null, "Pratkvarnar 💬"));
+      const ol = el("ol");
+      talkers.forEach((t, i) => {
+        const li = el("li");
+        li.append(el("span", null, medals[i] || "·"), el("span", "who", t.name),
+          el("span", "num", t.n + (t.n === 1 ? " kommentar" : " kommentarer")));
+        ol.append(li);
+      });
+      col.append(ol);
+      body.append(col);
+    }
     const priceList = (title, list, icons) => {
       if (!list.length) return;
       any = true;
