@@ -2053,7 +2053,7 @@
     try {
       const getProposals = () => api("aw_proposal?select=" + proposalCols() + "&order=starts_at.asc").catch((e) => {
         // Ny SQL inte körd än: hämta utan de nya kolumnerna
-        if (extrasAvailable && e instanceof ApiError && (e.detail.code === "42703" || e.detail.code === "42501")) {
+        if (e instanceof ApiError && (e.detail.code === "42703" || e.detail.code === "42501")) {
           extrasAvailable = false;
           return api("aw_proposal?select=" + BASIC_COLS + "&order=starts_at.asc");
         }
