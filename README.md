@@ -104,7 +104,7 @@ Installera/uppdatera funktionen:
 
 Utan funktionen laddas kalenderfilen ner i stället (öppna den i Filer).
 
-## Admin: ta bort vilket förslag eller vilken kommentar som helst
+## Admin: ta bort förslag, kommentarer, bilder, folk och slumpningar
 
 1. Lägg in en admin-kod i Supabase (SQL Editor, byt `HEMLIG-KOD` mot din egen):
 
@@ -116,6 +116,9 @@ Utan funktionen laddas kalenderfilen ner i stället (öppna den i Filer).
 2. Tryck **Logga in som admin** längst ner på sidan (eller öppna sidan med `#admin` i slutet av
    adressen) och skriv in koden. Webbläsaren kommer ihåg den; "Logga ut som admin" finns längst ner.
 3. Byta kod: `delete from public.aw_admin;` och lägg in en ny enligt steg 1.
+
+Som admin kan du även ändra tid/plats på alla förslag, ta bort någons svar (× på namnet; var det
+den som skulle bjuda nollställs slumpningen) och slumpa om eller ta bort "vem bjuder".
 
 Koden lagras bara som hash i databasen och finns aldrig i koden på GitHub.
 
