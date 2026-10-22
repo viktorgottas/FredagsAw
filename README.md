@@ -87,6 +87,9 @@ Anon-/publishable-nyckeln är gjord för att synas publikt – skyddet ligger i 
   i Storage tills du tar bort den där.
 - **Minnen** visar de senaste 10 AW:erna som någon gick på, med bilder. **Topplistan** visar
   Stammisar, Idésprutor och Kanske-kungar. Passerade förslag som ingen svarade ja på raderas.
+- Appen har tre flikar längst ner: **AW:er** (flödet med förslag och Minnen), **Föreslå** och
+  **Mer** (topplista, mejl/kalender, hemskärmsguide, admin). Länkar: `#foresla`, `#mer`, `#kalender`,
+  `#forslag-<id>`. En siffra på AW:er visar nya förslag man inte sett.
 - Listan uppdateras var 10:e sekund (och direkt när man kommer tillbaka till fliken).
 - Namn sätts med `textContent`, så HTML i namn visas bara som text.
 
