@@ -640,6 +640,9 @@
   }
   .pill-del:hover { color: var(--error-ink); }
   .pill-del:focus-visible { outline: 3px solid var(--brass); outline-offset: 1px; }
+  .admin-add { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .admin-add input { flex: 1 1 140px; min-width: 0; padding: 8px 10px; font: inherit; }
+  .admin-add select { padding: 8px; font: inherit; }
   .buyer-admin { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .pill .you {
     margin-left: 6px;
@@ -1510,6 +1513,30 @@
     }
   }
 
+  async function adminAddRsvp(p, card) {
+    const input = card.refs.adminAdd.input;
+    const name = input.value.trim();
+    if (!adminCode || !name) { input.focus(); return; }
+    const status = card.refs.adminAdd.select.value;
+    try {
+      // Samma insert som ett vanligt svar, men med ett engångstoken som ingen webbläsare äger.
+      const token = "admin-" + (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+      const rows = await api("rsvp?select=id", {
+        method: "POST", body: { proposal_id: p.id, name, status, token }, prefer: "return=representation"
+      });
+      const id = rows && rows[0] && rows[0].id;
+      if (!id) throw new Error("oväntat svar");
+      rsvps = rsvps.concat([{ id, proposal_id: p.id, name, status, created_at: new Date().toISOString() }]);
+      input.value = "";
+      render();
+      showMsg(card.refs.msg, name + " är tillagd.", "ok");
+    } catch (e) {
+      showMsg(card.refs.msg, errorText("Kunde inte lägga till " + name, e), "error");
+    } finally {
+      refresh();
+    }
+  }
+
   async function adminClearBuyer(p, card) {
     if (!adminCode || !confirm("Ta bort slumpningen av vem som bjuder?")) return;
     try {
@@ -2127,6 +2154,21 @@
       refs.groups[s] = { root: g, heading: h, list: ul };
     });
 
+    refs.adminAdd = { root: el("form", "admin-add") };
+    refs.adminAdd.root.hidden = true;
+    refs.adminAdd.input = el("input");
+    refs.adminAdd.input.type = "text";
+    refs.adminAdd.input.maxLength = 40;
+    refs.adminAdd.input.placeholder = "Lägg till person (admin)";
+    refs.adminAdd.input.setAttribute("aria-label", "Namn att lägga till");
+    refs.adminAdd.select = el("select");
+    STATUSES.forEach((s) => { const o = el("option", null, LABELS[s]); o.value = s; refs.adminAdd.select.append(o); });
+    refs.adminAdd.select.setAttribute("aria-label", "Svar");
+    const addBtn = el("button", "choice", "Lägg till");
+    addBtn.type = "submit";
+    refs.adminAdd.root.append(refs.adminAdd.input, refs.adminAdd.select, addBtn);
+    refs.adminAdd.root.addEventListener("submit", (ev) => { ev.preventDefault(); adminAddRsvp(currentProposal(p.id), card); });
+
     const links = el("div", "links");
     refs.removeRsvp = el("button", "linkish", "Ta bort mitt svar");
     refs.removeRsvp.type = "button";
@@ -2239,7 +2281,7 @@
     refs.photoBlock = buildPhotoBlock(p.id);
 
     root.append(refs.snapPrompt, badges, refs.title, refs.when, refs.countdown, refs.weather, refs.secretInfo, refs.price, refs.note, refs.by, ef.root,
-      tally, choices, refs.msg, groupsWrap, buyer.root, refs.photoBlock.root, cwrap, actionsWrap, links);
+      tally, choices, refs.msg, groupsWrap, refs.adminAdd.root, buyer.root, refs.photoBlock.root, cwrap, actionsWrap, links);
     const card = { root, refs, busy: false };
     return card;
   }
@@ -2346,6 +2388,7 @@
       });
     });
 
+    refs.adminAdd.root.hidden = !adminCode;
     refs.removeRsvp.hidden = !mine;
     const canManage = !!adminCode || me.proposals.includes(p.id);
     refs.removeProposal.hidden = !canManage;
