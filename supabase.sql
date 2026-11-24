@@ -489,30 +489,3 @@ end
 $$;
 revoke all on function public.aw_set_price(text, int, text) from public, anon, authenticated;
 grant execute on function public.aw_set_price(text, int, text) to anon;
-
--- Admin: lägg till någon som kommer (eller kanske/kan inte) åt en annan person
-create or replace function public.admin_add_rsvp(p_id uuid, p_name text, p_status text, p_code text)
-returns uuid
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare new_id uuid;
-begin
-  if not admin_check(p_code) then
-    raise exception 'Fel admin-kod' using errcode = '42501';
-  end if;
-  if p_status not in ('yes', 'maybe', 'no') then
-    raise exception 'Ogiltigt svar' using errcode = '22023';
-  end if;
-  if p_name is null or char_length(btrim(p_name)) not between 1 and 40 then
-    raise exception 'Namnet måste vara 1–40 tecken' using errcode = '22023';
-  end if;
-  insert into rsvp (proposal_id, name, status, token)
-  values (p_id, btrim(p_name), p_status, 'admin-' || gen_random_uuid()::text)
-  returning id into new_id;
-  return new_id;
-end
-$$;
-revoke all on function public.admin_add_rsvp(uuid, text, text, text) from public, anon, authenticated;
-grant execute on function public.admin_add_rsvp(uuid, text, text, text) to anon;

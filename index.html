@@ -1519,7 +1519,12 @@
     if (!adminCode || !name) { input.focus(); return; }
     const status = card.refs.adminAdd.select.value;
     try {
-      const id = await api("rpc/admin_add_rsvp", { method: "POST", body: { p_id: p.id, p_name: name, p_status: status, p_code: adminCode } });
+      // Samma insert som ett vanligt svar, men med ett engångstoken som ingen webbläsare äger.
+      const token = "admin-" + (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+      const rows = await api("rsvp?select=id", {
+        method: "POST", body: { proposal_id: p.id, name, status, token }, prefer: "return=representation"
+      });
+      const id = rows && rows[0] && rows[0].id;
       if (!id) throw new Error("oväntat svar");
       rsvps = rsvps.concat([{ id, proposal_id: p.id, name, status, created_at: new Date().toISOString() }]);
       input.value = "";
